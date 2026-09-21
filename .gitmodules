@@ -1,0 +1,4 @@
+[submodule "rtklib"]
+	path = rtklib
+	url = git@github.com:benlamonica/RTKLIB.git
+	branch = rtklib_2.4.3_rp2350

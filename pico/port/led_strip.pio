@@ -1,0 +1,40 @@
+;-------------------------------------------------------------------------------
+; led_strip.pio : WS2812B / SK6812 driver, plus a pin sampler for self-test
+;
+; One timing set serves both chips. At a 20 MHz state-machine clock a bit is
+; 25 cycles (1.25 us) and T1/T2/T3 below give:
+;
+;   T0H 0.400 us   T0L 0.850 us   T1H 0.700 us   T1L 0.550 us
+;
+; which is inside the datasheet window for WS2812B (the demo strip) and for
+; SK6812 RGBW (the eventual board), so the same firmware drives either.
+;-------------------------------------------------------------------------------
+
+.program ws2812
+.side_set 1
+
+.define public T1 8
+.define public T2 6
+.define public T3 11
+
+.wrap_target
+bitloop:
+    out x, 1        side 0 [T3 - 1]   ; drop low, shift the next bit out
+    jmp !x do_zero  side 1 [T1 - 1]   ; rise; T1 high is a '0'
+do_one:
+    jmp  bitloop    side 1 [T2 - 1]   ; stay high: T1+T2 high is a '1'
+do_zero:
+    nop             side 0 [T2 - 1]   ; fall early for a '0'
+.wrap
+
+;-------------------------------------------------------------------------------
+; Sample one pin, one bit per clock, into the RX FIFO.
+;
+; The RP2350 input buffer stays connected while PIO drives a pad, so this can
+; watch the very pin the driver above is toggling - no jumper, no scope. That
+; is how the on-target test verifies the waveform against the datasheet.
+;-------------------------------------------------------------------------------
+.program pin_sample
+.wrap_target
+    in pins, 1
+.wrap
