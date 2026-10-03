@@ -24,8 +24,8 @@ is no configuration in which a single roving receiver produces an RTK fix.
 | | |
 |---|---|
 | RTKLIB base | 2.4.3 b34 (`rtklib_2.4.3`) |
-| Host test suite | 74 checks, all passing |
-| On-target suite | builds and runs on the RP2350 |
+| Host test suite | 357 checks across GPS+Galileo and GPS+GLONASS builds, all passing |
+| On-target suite | 108 checks passing on the RP2350 (GPS+GLONASS build) |
 | RAM (`drone-show-controller`, incl. Wi-Fi + lwIP) | **263 KB of 520 KB** (51%) |
 | Flash | **547 KB of 4 MB** (13%) |
 | Accuracy (simulated, 1.2 km baseline) | 1.3 mm static / 8.0 mm kinematic, horizontal RMS over fixed epochs |
@@ -53,9 +53,10 @@ export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
 cmake -S pico -B build/pico -DPICO_BOARD=pico2_w -DCMAKE_BUILD_TYPE=Release
 cmake --build build/pico -j8
 
-# host tests (no hardware needed)
+# host tests (no hardware needed): every test runs twice, GPS+Galileo and
+# GPS+GLONASS (the M8P's pairing), as test_x and test_x_glo
 cmake -S pico/test -B build/host && cmake --build build/host -j8
-./build/host/test_ubx && ./build/host/test_rtk && ./build/host/bench_host
+(cd build/host && ctest) && ./build/host/bench_host
 ```
 
 Build options: `-DRTKPICO_ENABLE_GAL=ON|OFF`, `-DRTKPICO_ENABLE_GLO=ON|OFF`,
@@ -226,13 +227,32 @@ engine one byte at a time. Ephemerides go out as real GPS LNAV subframes
 through `RXM-SFRBX`, so `save_subfrm()` → `decode_frame()` → `decode_ephem()`
 are all exercised — nothing is injected behind the decoder's back.
 
-`test_ubx` (55 checks) covers RAWX round-tripping, LNAV bit packing (decoded
-ephemeris agrees with truth to 4 mm of satellite position), cycle-slip
-flagging, and framing robustness against junk, bad checksums and truncation.
+GLONASS is simulated the same way, and it is the GPS+GLONASS build (`_glo`)
+that matches the firmware. The 24 satellites fly the real 3-plane layout with
+the real slot→channel table. Each observes on its own FDMA carrier
+(1602 MHz + 0.5625 MHz × channel, ionosphere scaled to match) and reports its
+channel in RAWX `freqId`. The ephemerides are PZ-90 state vectors, integrated
+by RTKLIB's own `geph2pos()` and broadcast as real navigation strings 1–4
+(Hamming code included) through `RXM-SFRBX`. They sit on the broadcast
+resolution grid, so what the rover decodes is bit-identical to the orbit the
+observations came from. A station can also carry per-channel GLONASS code
+biases (`sim_station_t.glo_code_bias`), and the base can speak RTCM3 — 1005
+plus MSM7 1077/1087 from RTKLIB's own encoder — instead of UBX
+(`SIM_BASE_RTCM3`).
 
-`test_rtk` (21 checks) covers static and kinematic convergence, recurring
-cycle slips, base-link dropout and recovery, and accuracy against baseline
-length.
+`test_ubx` (53 checks; 76 in the GLONASS build) covers RAWX round-tripping,
+LNAV bit packing (decoded ephemeris agrees with truth to 4 mm of satellite
+position), GLONASS string encode → decode (bit-exact state vector, adjacent
+slots, channel recovery), cycle-slip flagging, and framing robustness against
+junk, bad checksums and truncation.
+
+`test_rtk` (24 checks; 36 in the GLONASS build) covers static and kinematic
+convergence, recurring cycle slips, half-cycle flags, base-link dropout and
+recovery, and accuracy against baseline length. The GLONASS build adds
+GPS+GLONASS fixing, an RTCM3 MSM7 base, and the 2026-09-21 field fault:
+per-channel GLONASS code biases plus a receiver-wide lock loss every 25 s.
+That last one fixes on wrong integers (~1.5 m off) with RTKLIB's stock GLONASS
+code weight and must never produce a wrong fix with `EFACT_GLO_CODE`.
 
 Two bugs the tests caught, both worth knowing about:
 
@@ -253,6 +273,82 @@ Two bugs the tests caught, both worth knowing about:
 
 Both were in the *test rig*, not RTKLIB — but each would have appeared
 identically as "RTK never fixes" on real hardware.
+
+### On the target
+
+`test_target` runs `test_ubx` and `test_rtk` on the RP2350 itself and prints
+its own heap high-water mark and deepest stack use at the end (last run:
+414 of 446 KB heap, 12,988 of 24,576 bytes stack). Two things make it fit:
+
+- **One engine, on the heap.** The RTK tests borrow a single `rtkeng_t` and
+  `sim_scenario_t` that the runner allocates once (`test_rtk_suite()`); the
+  host `main()` does the same. Statically there were two of each, 340 KB of
+  bss, which left the engine too little heap to start.
+- **A real stack.** RTKLIB needs ~13 KB of stack; the SDK gives core 0 the two
+  4 KB scratch banks with the heap free to grow up to them. `rtkpico_stack_guard()`
+  (`pico/CMakeLists.txt`) reserves `RTKPICO_STACK_RESERVE` (16 KB) below the
+  banks by overriding one SDK linker include, `pico/linker/section_end.incl`,
+  so that `__StackLimit` -- where the SDK's own `_sbrk` stops the heap -- sits
+  lower. It also enables `PICO_USE_STACK_GUARDS`, which on the RP2350 arms the
+  stack-limit register `MSPLIM` at the new bottom, so an overflow faults
+  instead of corrupting the heap. No SDK function is replaced. Re-check
+  `section_end.incl` against the SDK's copy when upgrading the SDK.
+
+The firmware apps do not use `rtkpico_stack_guard()` yet, though they run the
+same `rtkpos()` path and so need the same stack.
+
+### Replaying a field capture
+
+The simulator cannot reproduce what a real sky and real receivers do, so field
+problems are diagnosed from recordings instead. Build `rtk_bench` with the raw
+dump enabled, record it, and replay the bytes on the host:
+
+```bash
+# firmware: every rover and correction byte also goes out as X,U / X,R lines.
+# CMAKE_C_FLAGS replaces the SDK's CPU flags rather than adding to them, which
+# is why they are spelled out.
+cmake -S pico -B build/dump -DPICO_BOARD=pico2_w -DCMAKE_BUILD_TYPE=Release \
+      -DRTKPICO_ENABLE_GLO=ON -DRTKPICO_ENABLE_GAL=OFF \
+      -DCMAKE_C_FLAGS="-mcpu=cortex-m33 -mthumb -march=armv8-m.main+fp+dsp -mcmse -mfloat-abi=softfp -DRTK_BENCH_RAWDUMP=1"
+cmake --build build/dump --target rtk_bench && ./pico/scripts/flash.sh build/dump/rtk_bench.elf
+
+# record with the rover static and undisturbed
+./pico/scripts/capture.py -o field.log --minutes 15
+
+# replay is built against the GPS+GLONASS library, the pairing the firmware
+# flies; a capture only reproduces with the same constellations compiled in
+cmake -S pico/test -B build/host && cmake --build build/host --target replay
+./build/host/replay field.log
+```
+
+The replay is bit-identical to what the board computed, so every engine
+experiment runs at the desk: `--gps`, `--static`, `--thres`, `--minlock`,
+`--elmin` and so on. The receiver's own `NAV-RELPOSNED` rides in the same UBX
+stream and is the reference. With the rover static at a known baseline (take
+the receiver's fixed result), two options answer most questions:
+
+- `--ref E N U` scores every one of our solutions against it, so a *wrong*
+  fix is counted as wrong rather than as a fix.
+- `--dd E N U` prints per-satellite double-difference residuals of the raw
+  observations. Code DDs should average zero; phase DDs should stay flat
+  within an unbroken arc. A satellite that fails either feeds the filter a
+  bias that no tuning will remove. `--ddtrace G26` prints one satellite's series.
+
+Every replay also reports **receiver-wide carrier-lock losses**: epochs where
+nearly every satellite's lock time resets at once while C/N0 holds steady.
+That is the receiver, not the sky, and each one resets every ambiguity in our
+engine and in the receiver's own RTK. `rtk_bench` shows the same count live on
+its `lock:` line (rule in `port/lockloss.h`). To find the trigger, build it
+with `-DRTK_BENCH_WIFI=0` (radio never powered, so no corrections either) or
+`-DRTK_BENCH_TEE=0` (corrections still flow to our engine but are no longer
+written to the receiver's UART), and compare rates with the antenna in the
+same spot.
+
+`--split PREFIX` writes the raw `.ubx` and `.rtcm3` streams for stock RTKLIB
+(`convbin`, then `rnx2rtkp`), which settles whether a problem is ours or
+RTKLIB's. Stock 2.4.3 b34 `rnx2rtkp -sys` is broken -- its switch has no
+`break`s, so any letter enables every system -- so select systems with a config
+file line such as `pos1-navsys=1` instead.
 
 ## Performance
 

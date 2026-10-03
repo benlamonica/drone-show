@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 * gnss_sim.h : GNSS constellation and observable simulator
 *
-* Generates a plausible GPS(+Galileo) constellation and, for any receiver
+* Generates a plausible GPS(+Galileo or +GLONASS) constellation and, for any receiver
 * position and epoch, the pseudorange / carrier-phase / Doppler a receiver
 * would report. Paired with ubx_encode.c this feeds the RTK engine through the
 * real UBX decode path.
@@ -21,11 +21,13 @@ extern "C" {
 #endif
 
 #define SIM_MAXSAT   64
+#define SIM_MAXGLO   24          /* GLONASS slots 1..24                      */
 
 typedef struct {
     int    n;                    /* satellites in the constellation          */
     int    sat[SIM_MAXSAT];      /* RTKLIB satellite numbers                 */
-    eph_t  eph[SIM_MAXSAT];      /* truth ephemerides                        */
+    eph_t  eph[SIM_MAXSAT];      /* truth ephemerides (GPS/Galileo)          */
+    geph_t geph[SIM_MAXGLO];     /* truth ephemerides (GLONASS), by slot-1   */
     int    week;
     double toe;                  /* time of ephemeris (s in week)            */
 } sim_constellation_t;
@@ -42,6 +44,11 @@ typedef struct {
                                     receiver does once it has resolved the
                                     half-cycle and subtracted it              */
     uint32_t rng;                /* PRNG state (per station)                 */
+    /* GLONASS inter-frequency code bias (m), indexed by channel+7. Each FDMA
+     * channel passes through the antenna and front end with its own group
+     * delay; when base and rover hardware differ these do not cancel. Zero
+     * unless a test sets them. */
+    double glo_code_bias[14];
 } sim_station_t;
 
 typedef struct {
@@ -60,9 +67,15 @@ typedef struct {
 
 void sim_default_errmodel(sim_errmodel_t *e);
 
-/* Build a Walker-style constellation: `ngps` GPS and `ngal` Galileo SVs. */
+/* Build a Walker-style constellation: `ngps` GPS, `ngal` Galileo and `nglo`
+ * GLONASS SVs (each only where the build enables that system). GLONASS takes
+ * the real 3-plane, 8-slot layout and slot->channel table, with its reference
+ * time on the nearest 15-minute GLONASS boundary to `toe`. */
 void sim_make_constellation(sim_constellation_t *c, int week, double toe,
-                            int ngps, int ngal);
+                            int ngps, int ngal, int nglo);
+
+/* GLONASS frequency channel (-7..+6) of a slot (1..24). */
+int  sim_glo_fcn(int slot);
 
 /* Initialise a station at a geodetic position (deg, deg, m). */
 void sim_station_init(sim_station_t *st, const double *llh, uint32_t seed);

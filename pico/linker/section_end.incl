@@ -1,0 +1,57 @@
+/* Override of pico-sdk 2.3.0
+ *   src/rp2_common/pico_standard_link/script_include/section_end.incl
+ * installed with pico_add_linker_script_override_path() (see
+ * rtkpico_stack_guard() in pico/CMakeLists.txt). Identical to the SDK file
+ * except for the lines marked RTKPICO below -- re-check them against the
+ * SDK's copy when upgrading.
+ *
+ * Why: the SDK gives core 0 the two 4 KB scratch banks for its stack and lets
+ * the heap grow right up to them, with nothing between. RTKLIB needs ~13 KB of
+ * stack (measured on target), so it ran past the scratch banks into the top of
+ * the heap. Lowering __StackLimit by RTKPICO_STACK_RESERVE makes the SDK's own
+ * _sbrk stop the heap that much short, and the reserved RAM directly below
+ * SCRATCH_X extends the stack contiguously. __StackBottom moves to the same
+ * floor because PICO_USE_STACK_GUARDS arms the Armv8-M stack limit register
+ * (MSPLIM) at __StackBottom: left at the SDK's nominal 2 KB it would fault on
+ * the first deep call.
+ */
+
+/* Defines the following symbols for use by code:
+    __StackLimit
+    __StackOneTop, __StackOneBottom
+    __StackTop, __StackBottom
+    __stack (== __StackTop)
+
+    Also defines additional symbols for other compilers/libcs
+*/
+
+SECTIONS
+{
+    /* stack limit is poorly named, but historically is maximum heap ptr */
+    /* RTKPICO: reserve the top of RAM for core 0's stack */
+    __StackLimit = ORIGIN(RAM) + LENGTH(RAM) - (DEFINED(RTKPICO_STACK_RESERVE) ? RTKPICO_STACK_RESERVE : 0);
+    __StackOneTop = ORIGIN(SCRATCH_X) + LENGTH(SCRATCH_X);
+    __StackTop = ORIGIN(SCRATCH_Y) + LENGTH(SCRATCH_Y);
+    __StackOneBottom = __StackOneTop - SIZEOF(.stack1_dummy);
+    /* RTKPICO: the stack's true bottom, where the MSPLIM guard belongs. Only
+       valid while core 1 is not launched (its stack lives in SCRATCH_X). */
+    __StackBottom = DEFINED(RTKPICO_STACK_RESERVE) ? __StackLimit : __StackTop - SIZEOF(.stack_dummy);
+    PROVIDE(__stack = __StackTop);
+
+    /* picolibc and LLVM */
+    PROVIDE (__heap_start = __end__);
+    PROVIDE (__heap_end = __HeapLimit);
+    PROVIDE( __tls_align = MAX(ALIGNOF(.tdata), ALIGNOF(.tbss)) );
+    PROVIDE( __tls_size_align = (__tls_size + __tls_align - 1) & ~(__tls_align - 1));
+    PROVIDE( __arm32_tls_tcb_offset = MAX(8, __tls_align) );
+
+    /* llvm-libc */
+    PROVIDE (_end = __end__);
+    PROVIDE (__llvm_libc_heap_limit = __HeapLimit);
+
+    /* Check if data + heap + stack exceeds RAM limit */
+    ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed")
+    /* RTKPICO: core 0's extended stack runs through SCRATCH_X, core 1's home */
+    ASSERT(!DEFINED(RTKPICO_STACK_RESERVE) || SIZEOF(.stack1_dummy) == 0,
+           "RTKPICO_STACK_RESERVE uses SCRATCH_X for core 0's stack; it cannot coexist with a core 1 stack")
+}

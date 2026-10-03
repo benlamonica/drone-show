@@ -9,6 +9,7 @@
 *-----------------------------------------------------------------------------*/
 #include "ubx_encode.h"
 #include <string.h>
+#include <math.h>
 
 #define UBXSYNC1 0xB5
 #define UBXSYNC2 0x62
@@ -81,7 +82,7 @@ int ubx_encode_rawx(unsigned char *buf, int size, gtime_t time,
         if (aux) a=aux[i];
         else {
             a.locktime_ms=64000; a.cno=45; a.pr_stdev=5; a.cp_stdev=1;
-            a.do_stdev=1; a.trk_stat=0x07; a.half_cyc_sub=0;
+            a.do_stdev=1; a.trk_stat=0x07; a.half_cyc_sub=0; a.freq_id=7;
         }
         if (sys==SYS_QZS) prn-=192;   /* decode_rxmsfrbx() adds it back */
 
@@ -91,7 +92,7 @@ int ubx_encode_rawx(unsigned char *buf, int size, gtime_t time,
         setU1(q+20,(uint8_t)gnssid);
         setU1(q+21,(uint8_t)prn);
         setU1(q+22,0);                                  /* sigId            */
-        setU1(q+23,7);                                  /* freqId (fcn+7)   */
+        setU1(q+23,a.freq_id);                          /* freqId (fcn+7)   */
         setU2(q+24,a.locktime_ms);
         setU1(q+26,a.cno);
         setU1(q+27,a.pr_stdev);
@@ -213,31 +214,83 @@ int ubx_encode_sfrbx_gps(unsigned char *buf, int size, int prn, int id,
     return ubx_finish(buf,0x02,0x13,paylen);
 }
 
-/* --- GLONASS navigation string -------------------------------------------- */
+/* --- GLONASS navigation strings ------------------------------------------ */
 
-int ubx_encode_sfrbx_glo(unsigned char *buf, int size, int slot, int m, int tb)
+/* Inverse of rcvraw.c getbitg(): sign bit, then magnitude. */
+static void setbitg(unsigned char *buff, int pos, int len, double v, double lsb)
 {
-    unsigned char s[16]={0};
-    int i,paylen=8+4*4;
+    double x=fabs(v)/lsb;
+    setbitu(buff,pos,1,v<0.0?1:0);
+    setbitu(buff,pos+1,len-1,(uint32_t)(x+0.5));
+}
+
+/* Field layout mirrors decode_glostr_eph() bit for bit; the reserved gaps it
+ * skips are left zero. Bits 77-84 are the Hamming code. */
+void glo_nav_string(unsigned char *s, const geph_t *g, int m, gtime_t tframe)
+{
+    double tod;
     uint32_t c;
+    int week,slot=0,k=m-1;
 
-    if (size<paylen+8||m<1||m>4) return 0;
-
-    setbitu(s,1,4,(uint32_t)m);                 /* string number           */
-    if (m==2) setbitu(s, 9,7,(uint32_t)tb);
-    if (m==4) setbitu(s,70,5,(uint32_t)slot);
-    /* Check bits 77..84: search rather than re-derive the code, so the string
+    memset(s,0,11);
+    satsys(g->sat,&slot);
+    setbitu(s,1,4,(uint32_t)m);
+    if (m>=1&&m<=3) {
+        setbitg(s,21,24,g->vel[k]*1E-3,P2_20);  /* km/s   */
+        setbitg(s,45, 5,g->acc[k]*1E-3,P2_30);  /* km/s^2 */
+        setbitg(s,50,27,g->pos[k]*1E-3,P2_11);  /* km     */
+    }
+    if (m==1) {
+        /* tk: start of this frame, Moscow time of day, 30 s resolution */
+        tod=fmod(time2gpst(gpst2utc(tframe),&week)+10800.0,86400.0);
+        setbitu(s, 9,5,(uint32_t)(tod/3600.0));
+        setbitu(s,14,6,(uint32_t)fmod(tod/60.0,60.0));
+        setbitu(s,20,1,fmod(tod,60.0)>=30.0?1:0);
+    }
+    else if (m==2) {
+        setbitu(s, 5,1,(uint32_t)(g->svh&1));   /* MSB of Bn                  */
+        setbitu(s, 9,7,(uint32_t)g->iode);      /* tb, 15-minute index        */
+    }
+    else if (m==3) {
+        setbitg(s, 6,11,g->gamn,P2_40);
+    }
+    else if (m==4) {
+        setbitg(s, 5,22,g->taun ,P2_30);
+        setbitg(s,27, 5,g->dtaun,P2_30);
+        setbitu(s,32, 5,(uint32_t)g->age);
+        setbitu(s,52, 4,(uint32_t)g->sva);
+        setbitu(s,59,11,1);                     /* NT: not used by the decoder */
+        setbitu(s,70, 5,(uint32_t)slot);
+        setbitu(s,75, 2,1);                     /* M: GLONASS-M                */
+    }
+    /* Search the 8 check bits rather than re-derive the code, so the string
      * is valid by the decoder's own definition. */
     for (c=0;c<256;c++) {
         setbitu(s,77,8,c);
         if (test_glostr(s)) break;
     }
-    s[12]=0x12; s[13]=0x01;                     /* frame id, same for all SVs */
+}
+
+int ubx_encode_sfrbx_glo(unsigned char *buf, int size, const geph_t *g,
+                         int m, gtime_t tframe)
+{
+    unsigned char s[16]={0};
+    int i,paylen=8+4*4,week,slot=0;
+    uint32_t frame;
+
+    if (size<paylen+8||m<1||m>4) return 0;
+    satsys(g->sat,&slot);
+    glo_nav_string(s,g,m,tframe);
+    /* Frame id in the fourth word: decode_gnav() flushes its string buffer
+     * whenever it changes, so every string of one frame must carry the same. */
+    frame=(uint32_t)floor(time2gpst(tframe,&week)/30.0);
+    s[12]=(unsigned char)(frame>>8);
+    s[13]=(unsigned char)frame;
 
     memset(buf,0,paylen+8);
     setU1(buf+6+0,6);                    /* gnssId: GLONASS                 */
     setU1(buf+6+1,(uint8_t)slot);        /* svId: slot                      */
-    setU1(buf+6+3,7);                    /* freqId: fcn+7                   */
+    setU1(buf+6+3,(uint8_t)(g->frq+7));  /* freqId: channel+7               */
     setU1(buf+6+4,4);                    /* numWords                        */
     setU1(buf+6+6,2);                    /* version                         */
 

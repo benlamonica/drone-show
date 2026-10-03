@@ -152,8 +152,13 @@ extern int  init_rtcm(rtcm_t *rtcm)  { (void)rtcm; return 0; }
 extern void free_rtcm(rtcm_t *rtcm)  { (void)rtcm; }
 #else
 /* rtcm.c's dispatchers reference the RTCM2 decoder and the RTCM3 *encoder*.
- * We only ever consume RTCM3, so neither is linked in. */
+ * The firmware only ever consumes RTCM3, so neither is linked in. The host
+ * test build does link the encoder (RTKPICO_HAVE_RTCM3E), so the simulated
+ * base can send MSM7; there the stub would shadow it and every message would
+ * silently encode to nothing. */
 extern int decode_rtcm2(rtcm_t *rtcm) { (void)rtcm; return -1; }
-extern int encode_rtcm3(rtcm_t *rtcm, int type, int sync)
-    { (void)rtcm; (void)type; (void)sync; return 0; }
+#ifndef RTKPICO_HAVE_RTCM3E
+extern int encode_rtcm3(rtcm_t *rtcm, int type, int subtype, int sync)
+    { (void)rtcm; (void)type; (void)subtype; (void)sync; return 0; }
+#endif
 #endif

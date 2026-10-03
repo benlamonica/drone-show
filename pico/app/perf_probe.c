@@ -72,7 +72,7 @@ int main(void)
     }
 
     printf("\nRTKLIB kernels:\n");
-    sim_make_constellation(&con,2300,302400.0,24,0);
+    sim_make_constellation(&con,2300,302400.0,24,0,0);
     {
         gtime_t t=gpst2time(2300,302400.0);
         TIME("eph2pos (1 satellite)", 200, eph2pos(t,&con.eph[_i%24],rs,dts,&var));

@@ -14,14 +14,20 @@
 * Output is two interleaved streams on USB CDC:
 *   "D," lines   one per solution (5 Hz), comma separated, for offline analysis
 *   plain lines  once a second, human readable, so a field test needs no tools
-* and, when built with -DRTK_BENCH_RAWDUMP=1, a third:
+* The "lock:" status line counts receiver-wide carrier-lock losses (see
+* port/lockloss.h). To find what triggers them, two build switches take the
+* suspects out one at a time, everything else unchanged:
+*   -DRTK_BENCH_WIFI=0   never power the radio (so no corrections either)
+*   -DRTK_BENCH_TEE=0    Wi-Fi and corrections as usual, but nothing is
+*                        written back to the receiver's UART
+* and, when built with -DRTK_BENCH_RAWDUMP=1, a third output stream:
 *   "X,U,"/"X,R," every rover (UBX) and correction (RTCM3) byte, in hex, in the
 *                order the engine consumed them, for replay through the host build
 *
 * Capture with:
-*   screen -L -Logfile rtk.csv /dev/cu.usbmodemXXXX 115200
+*   pico/scripts/capture.py -o rtk.log --minutes 15
 * or
-*   picocom -b 115200 --logfile rtk.csv /dev/cu.usbmodemXXXX
+*   picocom -b 115200 --logfile rtk.log /dev/cu.usbmodemXXXX
 *-----------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
@@ -35,6 +41,7 @@
 #include "rtk_engine.h"
 #include "rover_cfg.h"
 #include "ntrip_client.h"
+#include "lockloss.h"
 #include "rtklib.h"
 
 /* --- site configuration ---------------------------------------------------
@@ -72,6 +79,14 @@
 #define SOLUTION_RATE_HZ 5
 
 static rtkeng_t eng;                 /* ~190 KB: never on a stack */
+static lockloss_t lockloss;
+
+#ifndef RTK_BENCH_WIFI
+#define RTK_BENCH_WIFI 1
+#endif
+#ifndef RTK_BENCH_TEE
+#define RTK_BENCH_TEE  1
+#endif
 
 /* --- ring buffers ----------------------------------------------------------
  * Corrections arrive from lwIP's alarm IRQ while the main loop may be inside
@@ -135,6 +150,25 @@ static inline int rb_get(rb_t *r, uint8_t *b)
     r->tail = (uint16_t)((r->tail + 1u) & (RB_SIZE - 1u));
     return 1;
 }
+
+/* RTCM3 framing of the bytes going out to the receiver. The drain below stops
+ * whenever the TX FIFO is full, which is usually partway through a frame, and
+ * the once-a-second UBX polls share that UART. Written mid-frame they land
+ * inside the RTCM message, which then fails its CRC at the receiver -- the
+ * 2026-10-03 field test saw ~1% of corrections rejected that way while our
+ * engine, reading the same bytes before the UART, saw none bad. Polls wait
+ * until this says the link is between frames. */
+static uint16_t rtcm_tx_pos, rtcm_tx_len;
+static uint8_t  rtcm_tx_b1;
+
+static void rtcm_tx_track(uint8_t c)
+{
+    if (rtcm_tx_pos == 0 && c != 0xD3) return;      /* not inside a frame */
+    rtcm_tx_pos++;
+    if (rtcm_tx_pos == 2) rtcm_tx_b1 = c;
+    if (rtcm_tx_pos == 3) rtcm_tx_len = (uint16_t)((((rtcm_tx_b1 & 3u) << 8) | c) + 6u);
+    if (rtcm_tx_pos >= 3 && rtcm_tx_pos == rtcm_tx_len) rtcm_tx_pos = 0;
+}
 /* The rover UART must be drained from an interrupt, not polled. The FIFO is
  * 32 bytes -- about 1.4 ms at 230400 baud -- while this main loop can be away
  * far longer: rtkpos() runs 18-29 ms, lwIP services Wi-Fi from an alarm IRQ,
@@ -156,7 +190,12 @@ static void rover_irq(void)
 static void ntrip_rx(const uint8_t *d, uint16_t n, void *arg)
 {
     (void)arg;
-    for (uint16_t i = 0; i < n; i++) { rb_put(&rb_base, d[i]); rb_put(&rb_rtcm, d[i]); }
+    for (uint16_t i = 0; i < n; i++) {
+        rb_put(&rb_base, d[i]);
+#if RTK_BENCH_TEE
+        rb_put(&rb_rtcm, d[i]);
+#endif
+    }
 }
 
 /* --- running statistics ----------------------------------------------------
@@ -431,7 +470,7 @@ int main(void)
     absolute_time_t next;
     uint32_t n_sol = 0, n_fix = 0, n_float = 0;
     uint32_t last_frames = 0, last_rx = 0, rx_rate = 0;
-    bool wifi_ok;
+    bool wifi_ok, polls_due = false;
 
     stdio_init_all();
     sleep_ms(2500);
@@ -478,8 +517,15 @@ int main(void)
      * it, what we are holding is stale anyway and reconnecting is right.
      * Keep this tied to max_age -- they are the same threshold. */
     ncfg.stall_timeout_ms = (uint32_t)(cfg.max_age * 1000.0);
+#if RTK_BENCH_WIFI
     wifi_ok = ntrip_client_init(&ncfg, ntrip_rx, NULL);
     printf("wifi/ntrip init: %s\n\n", wifi_ok ? "ok" : "FAILED");
+#else
+    /* The CYW43 stays unpowered: no radio, no corrections, only the receiver. */
+    wifi_ok = false;
+    printf("wifi/ntrip: disabled at build (RTK_BENCH_WIFI=0)\n\n");
+#endif
+    lockloss_init(&lockloss);
 
     /* link_state, reconn and rssi ride along with every solution so a bad epoch
      * can be attributed. Without them a correction dropout and a genuinely poor
@@ -513,6 +559,15 @@ int main(void)
             uint8_t c;
             if (!rb_get(&rb_rtcm, &c)) break;
             uart_putc_raw(ROVER_UART, c);
+            rtcm_tx_track(c);
+        }
+
+        /* Polls go out only between RTCM frames; see rtcm_tx_track(). */
+        if (polls_due && rtcm_tx_pos == 0) {
+            ubx_send(ROVER_UART, 0x0A, 0x09, NULL, 0);   /* poll UBX-MON-HW  */
+            ubx_send(ROVER_UART, 0x0A, 0x04, NULL, 0);   /* poll UBX-MON-VER */
+            ubx_send(ROVER_UART, 0x06, 0x3E, NULL, 0);   /* poll UBX-CFG-GNSS */
+            polls_due = false;
         }
 
         while (rb_get(&rb_rover, &b)) {
@@ -526,7 +581,10 @@ int main(void)
             /* Snapshot the raw observations on every epoch, solution or not.
              * Reading only eng.rtk.sol hides the receiver completely whenever
              * the engine declines to solve. */
-            if (r == RTKENG_SOLUTION || r == RTKENG_OBS) snapshot_obs(&eng.rov.obs);
+            if (r == RTKENG_SOLUTION || r == RTKENG_OBS) {
+                snapshot_obs(&eng.rov.obs);
+                lockloss_epoch(&lockloss, eng.rov.obs.data, eng.rov.obs.n);
+            }
             if (r == RTKENG_SOLUTION) {
                 const sol_t *s = &eng.rtk.sol;
                 double enu[3], sd[3] = {0, 0, 0};
@@ -561,9 +619,7 @@ int main(void)
         if (absolute_time_diff_us(get_absolute_time(), next) > 0) continue;
         next = delayed_by_ms(next, 1000);
 
-        ubx_send(ROVER_UART, 0x0A, 0x09, NULL, 0);   /* poll UBX-MON-HW  */
-        ubx_send(ROVER_UART, 0x0A, 0x04, NULL, 0);   /* poll UBX-MON-VER */
-        ubx_send(ROVER_UART, 0x06, 0x3E, NULL, 0);   /* poll UBX-CFG-GNSS */
+        polls_due = true;
 
         /* The failure that cost a field trip: the receiver drops out of UBX and
          * emits something else (NMEA), so every frame counter sits at zero while
@@ -673,6 +729,14 @@ int main(void)
             printf("   rtcm->rx: %lu in  %lu used  %lu crc-fail   last type %u\n",
                    (unsigned long)rtcm_in, (unsigned long)rtcm_used,
                    (unsigned long)rtcm_crcfail, (unsigned)rtcm_last_type);
+            printf("   lock: %lu receiver-wide carrier losses in %.1f min",
+                   (unsigned long)lockloss.events, lockloss_minutes(&lockloss));
+            if (lockloss.events)
+                printf(" (one per %.0f s; last took %d of %d sats)",
+                       lockloss_minutes(&lockloss) * 60.0 / lockloss.events,
+                       lockloss.last_nslip, lockloss.last_ntrk);
+            printf("   [wifi %s, tee %s]\n", RTK_BENCH_WIFI ? "on" : "off",
+                   RTK_BENCH_TEE ? "on" : "off");
             {
                 /* newlib grows the arena to cover the largest epoch and only
                  * trims it back past 128 KB of free top, so its maximum is the

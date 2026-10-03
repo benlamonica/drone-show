@@ -108,8 +108,98 @@ static void make_eph(eph_t *eph, int sat, int idx, int nplane, int nper,
     eph->ttr  =gpst2time(week,toe-3600.0);
 }
 
+/* Slot -> frequency channel, as broadcast in 2024. Antipodal slots share a
+ * channel, which is why 24 satellites fit in 14 channels. */
+static const int glo_fcn_tab[24]={
+     1,-4, 5, 6, 1,-4, 5, 6,     /* plane 1: slots 1-8   */
+    -2,-7, 0,-1,-2,-7, 0,-1,     /* plane 2: slots 9-16  */
+     4,-3, 3, 2, 4,-3, 3, 2      /* plane 3: slots 17-24 */
+};
+
+int sim_glo_fcn(int slot)
+{
+    return slot>=1&&slot<=24?glo_fcn_tab[slot-1]:0;
+}
+
+#if NSATGLO>0
+/* Round to a broadcast LSB. GLONASS strings carry the state vector at fixed
+ * resolution (0.49 m, ~1 mm/s); rounding the truth to the same grid makes the
+ * ephemeris the rover decodes identical to the orbit the observations came
+ * from, so any disagreement downstream is the code under test. */
+static double qg(double v, double lsb)
+{
+    double x=v/lsb;
+    return (double)(long)(x>=0.0?x+0.5:x-0.5)*lsb;
+}
+
+/* The GLONASS reference time tb is broadcast in 15-minute steps of Moscow time
+ * (UTC+3h). Return the GPST instant of the step nearest `t`, and tb itself. */
+static gtime_t glo_toe(gtime_t t, int *tb)
+{
+    gtime_t utc=gpst2utc(t);
+    double tod,d;
+    int week;
+    tod=fmod(time2gpst(utc,&week)+10800.0,86400.0);
+    d=floor(tod/900.0+0.5);
+    *tb=((int)d)%96;
+    return utc2gpst(timeadd(utc,d*900.0-tod));
+}
+
+/* One GLONASS satellite: circular orbit, 64.8 deg, three planes 120 deg apart
+ * with 8 slots each, successive planes shifted 15 deg in argument of latitude
+ * (the 24/3/1 Walker pattern). The state vector is given in the Earth-fixed
+ * frame as the navigation message carries it; geph2pos() integrates it. */
+static void make_geph(geph_t *g, int sat, int slot, gtime_t toe, int tb,
+                      uint32_t *rng)
+{
+    const double a=25510000.0,inc=64.8*D2R,mu=3.9860044E14,w=7.292115E-5;
+    int plane=(slot-1)/8,k=(slot-1)%8,i,week;
+    double raan=plane*2.0*PI/3.0,u=k*PI/4.0+plane*PI/12.0,v=sqrt(mu/a);
+    double ri[3],vi[3],th,ct,st;
+
+    ri[0]=a*(cos(u)*cos(raan)-sin(u)*sin(raan)*cos(inc));
+    ri[1]=a*(cos(u)*sin(raan)+sin(u)*cos(raan)*cos(inc));
+    ri[2]=a*sin(u)*sin(inc);
+    vi[0]=v*(-sin(u)*cos(raan)-cos(u)*sin(raan)*cos(inc));
+    vi[1]=v*(-sin(u)*sin(raan)+cos(u)*cos(raan)*cos(inc));
+    vi[2]=v*cos(u)*sin(inc);
+
+    /* inertial -> Earth-fixed at toe; the angle only sets where the
+     * constellation sits over the station, so any deterministic value does */
+    th=fmod(w*time2gpst(toe,&week),2.0*PI);
+    ct=cos(th); st=sin(th);
+    memset(g,0,sizeof(*g));
+    g->pos[0]= ct*ri[0]+st*ri[1];
+    g->pos[1]=-st*ri[0]+ct*ri[1];
+    g->pos[2]= ri[2];
+    g->vel[0]= ct*vi[0]+st*vi[1]+w*g->pos[1];   /* minus omega x r */
+    g->vel[1]=-st*vi[0]+ct*vi[1]-w*g->pos[0];
+    g->vel[2]= vi[2];
+    for (i=0;i<3;i++) {
+        g->pos[i]=qg(g->pos[i],P2_11*1E3);
+        g->vel[i]=qg(g->vel[i],P2_20*1E3);
+    }
+    /* small non-zero lunisolar terms, so the encoder carries them */
+    g->acc[0]= 2.0*P2_30*1E3;
+    g->acc[1]=-1.0*P2_30*1E3;
+    g->acc[2]= 3.0*P2_30*1E3;
+
+    g->sat =sat;
+    g->iode=tb;                          /* decode_glostr_eph() sets iode=tb */
+    g->frq =glo_fcn_tab[slot-1];
+    g->svh =0;
+    g->sva =0;
+    g->age =0;
+    g->toe =toe;
+    g->tof =timeadd(toe,-30.0);
+    g->taun=qg(2.0E-5*sim_rand_gauss(rng),P2_30);
+    g->gamn=qg(3.0E-12,P2_40);
+    g->dtaun=0.0;
+}
+#endif
+
 void sim_make_constellation(sim_constellation_t *c, int week, double toe,
-                            int ngps, int ngal)
+                            int ngps, int ngal, int nglo)
 {
     uint32_t rng=0xC0FFEEu;
     int i,n=0;
@@ -129,6 +219,18 @@ void sim_make_constellation(sim_constellation_t *c, int week, double toe,
     }
 #else
     (void)ngal;
+#endif
+#if NSATGLO>0
+    {
+        int tb;
+        gtime_t gtoe=glo_toe(gpst2time(week,toe),&tb);
+        for (i=0;i<nglo&&i<SIM_MAXGLO&&n<SIM_MAXSAT;i++,n++) {
+            c->sat[n]=satno(SYS_GLO,i+1);
+            make_geph(&c->geph[i],c->sat[n],i+1,gtoe,tb,&rng);
+        }
+    }
+#else
+    (void)nglo;
 #endif
     c->n=n;
 }
@@ -169,16 +271,26 @@ void sim_force_slip(sim_station_t *st, int sat)
  * 3.9 km/s satellite), and because the rover and base clocks differ that error
  * does NOT cancel in the double difference -- it shows up as a per-satellite
  * bias of up to a cycle, which is enough to stop ambiguity resolution dead. */
-static int sat_state(const eph_t *eph, gtime_t trx, double dtr, const double *rr,
-                     double *rs, double *dts, double *range, double *e)
+static void sat_pos(const sim_constellation_t *c, int k, gtime_t t,
+                    double *rs, double *dts)
 {
-    double tau=0.075,var,r,rst[3],dtst[2];
+    double var;
+    int prn;
+    if (satsys(c->sat[k],&prn)==SYS_GLO) geph2pos(t,&c->geph[prn-1],rs,dts,&var);
+    else                                  eph2pos(t,&c->eph[k],rs,dts,&var);
+}
+
+static int sat_state(const sim_constellation_t *c, int k, gtime_t trx, double dtr,
+                     const double *rr, double *rs, double *dts, double *range,
+                     double *e)
+{
+    double tau=0.075,r,rst[3],dtst[2];
     gtime_t ttx={0};
     int i;
 
     for (i=0;i<4;i++) {
         ttx=timeadd(trx,-dtr-tau);
-        eph2pos(ttx,eph,rs,dts,&var);
+        sat_pos(c,k,ttx,rs,dts);
         r=geodist(rs,rr,e);        /* includes the Sagnac correction */
         if (r<=0.0) return 0;
         tau=r/CLIGHT;
@@ -189,7 +301,7 @@ static int sat_state(const eph_t *eph, gtime_t trx, double dtr, const double *rr
      * caller that reads rs[3..5] straight after eph2pos() is reading
      * uninitialised memory, which here produced a smooth, plausible and
      * completely wrong Doppler. Difference it the way ephpos() does. */
-    eph2pos(timeadd(ttx,SAT_VEL_TT),eph,rst,dtst,&var);
+    sat_pos(c,k,timeadd(ttx,SAT_VEL_TT),rst,dtst);
     for (i=0;i<3;i++) rs[i+3]=(rst[i]-rs[i])/SAT_VEL_TT;
     dts[1]=(dtst[0]-dts[0])/SAT_VEL_TT;
 
@@ -252,30 +364,37 @@ int sim_observe(const sim_constellation_t *c, sim_station_t *st,
                 obsd_t *obs, ubx_meas_aux_t *aux, int maxn)
 {
     double pos[3],rs[6],dts[2],e[3],azel[2],r;
-    double dtr,trop,iono,lam,sigc,sigp,mp,el_sin;
-    int i,n=0,sat;
+    double dtr,trop,iono,lam,freq,bias,sigc,sigp,mp,el_sin;
+    int i,n=0,sat,sys,fcn,prn;
 
     ecef2pos(st->pos,pos);
     dtr=st->clk_bias+st->clk_drift*0.0;
 
     for (i=0;i<c->n&&n<maxn;i++) {
         sat=c->sat[i];
-        if (!sat_state(&c->eph[i],time,dtr,st->pos,rs,dts,&r,e)) continue;
+        if (!sat_state(c,i,time,dtr,st->pos,rs,dts,&r,e)) continue;
         satazel(pos,e,azel);
         if (azel[1]<err->elev_mask_deg*D2R) continue;
 
         el_sin=sin(azel[1]); if (el_sin<0.05) el_sin=0.05;
 
+        sys=satsys(sat,&prn);
+        fcn=sys==SYS_GLO?c->geph[prn-1].frq:0;
+        /* GLONASS is FDMA: each channel has its own carrier, 0.5625 MHz apart.
+         * GPS L1, Galileo E1 and QZSS L1 share one. */
+        freq=sys==SYS_GLO?FREQ1_GLO+DFRQ1_GLO*fcn:FREQ1;
+        bias=sys==SYS_GLO?st->glo_code_bias[fcn+7]:0.0;
+
         trop=err->tropo_scale*tropo_delay(err,time,pos,azel,ref_llh);
-        iono=iono_delay(err,pos,ref_llh,azel);
+        /* the model is an L1 delay; it scales with 1/f^2 */
+        iono=iono_delay(err,pos,ref_llh,azel)*(FREQ1/freq)*(FREQ1/freq);
 
         /* Elevation-dependent noise, the standard a+b/sin(el) shape. */
         sigc=err->code_sigma /el_sin;
         sigp=err->phase_sigma/el_sin;
         mp  =err->multipath*sim_rand_gauss(&st->rng)/el_sin;
 
-        /* 2.4.3 removed the global lam_carr[]; L1/E1 share this frequency. */
-        lam=CLIGHT/FREQ1;
+        lam=CLIGHT/freq;
 
         /* Draw a fresh integer ambiguity on first lock or after a slip. */
         if (!st->tracked[sat-1]) {
@@ -288,12 +407,12 @@ int sim_observe(const sim_constellation_t *c, sim_station_t *st,
         obs[n].time=time;
         obs[n].sat =(unsigned char)sat;
         obs[n].rcv =0;
-        obs[n].code[0]=satsys(sat,NULL)==SYS_GAL?CODE_L1X:CODE_L1C;
+        obs[n].code[0]=sys==SYS_GAL?CODE_L1X:CODE_L1C;
 
         /* rho + c*(dtr - dts) + trop +/- iono  (+iono on code, -iono on phase) */
         obs[n].P[0]=r+CLIGHT*(dtr-dts[0])+trop+iono
                     +err->sat_clk_err*0.0            /* common-mode: cancels  */
-                    +mp+sigc*sim_rand_gauss(&st->rng);
+                    +mp+bias+sigc*sim_rand_gauss(&st->rng);
         obs[n].L[0]=(r+CLIGHT*(dtr-dts[0])+trop-iono
                     +sigp*sim_rand_gauss(&st->rng))/lam+st->amb[sat-1];
         /* Doppler must use satellite velocity RELATIVE TO THE RECEIVER,
@@ -330,6 +449,7 @@ int sim_observe(const sim_constellation_t *c, sim_station_t *st,
             aux[n].do_stdev  =1;
             aux[n].trk_stat  =0x07;      /* pr + cp valid, half-cycle known */
             aux[n].half_cyc_sub=st->half_sub[sat-1];
+            aux[n].freq_id  =(uint8_t)(fcn+7);   /* RAWX freqId: channel+7 */
         }
         n++;
     }

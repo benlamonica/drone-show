@@ -61,6 +61,7 @@ set(RTK_SRCS
     ${RTK_ROOT}/pico/port/rtk_engine.c
     ${RTK_ROOT}/pico/port/rover_cfg.c
     ${RTK_ROOT}/pico/port/ubx_cfg.c
+    ${RTK_ROOT}/pico/port/lockloss.c
 )
 if(RTKPICO_RTCM3)
   list(APPEND RTK_SRCS ${RTKLIB_SRC}/rtcm.c ${RTKLIB_SRC}/rtcm3.c)
@@ -111,6 +112,26 @@ function(rtkpico_configure target)
   endif()
   target_compile_options(${target} PRIVATE -O2 -ffunction-sections -fdata-sections)
   pico_add_extra_outputs(${target})
+endfunction()
+
+# Stack for anything that runs rtkpos(). The SDK gives core 0 the two 4 KB
+# scratch banks and lets the heap grow right up to them; RTKLIB needs ~13 KB
+# (measured on target: single-point positioning copies the 3.7 KB prcopt_t,
+# and outsolstat()'s 8 KB buffer moves the stack pointer every epoch). This
+# lowers __StackLimit -- the SDK's own _sbrk stops the heap there -- via a
+# one-file linker override (pico/linker/section_end.incl), and enables
+# PICO_USE_STACK_GUARDS, which on the RP2350 arms the core's stack limit
+# register (MSPLIM) at the new bottom: an overflow faults instead of silently
+# writing into the heap. Core 1 must stay unused (the stack spans SCRATCH_X);
+# the linker asserts that.
+set(RTKPICO_STACK_RESERVE 0x4000 CACHE STRING
+    "RAM below the scratch banks reserved for core 0's stack (bytes)")
+function(rtkpico_stack_guard target)
+  pico_add_linker_script_override_path(${target} ${RTK_ROOT}/pico/linker FILES section_end.incl)
+  pico_set_linker_script_var(${target} RTKPICO_STACK_RESERVE ${RTKPICO_STACK_RESERVE})
+  # keep __HeapLimit (picolibc/LLVM, and our own reporting) in step
+  pico_set_linker_script_var(${target} HEAP_LIMIT __StackLimit)
+  target_compile_definitions(${target} PRIVATE PICO_USE_STACK_GUARDS=1)
 endfunction()
 
 # --- firmware ------------------------------------------------------------------
@@ -178,6 +199,7 @@ target_link_libraries(test_target rtksim)
 pico_enable_stdio_usb(test_target 1)
 pico_enable_stdio_uart(test_target 0)
 rtkpico_configure(test_target)
+rtkpico_stack_guard(test_target)
 
 # --- primitive cost probe ------------------------------------------------------
 # --- NTRIP connection bench ------------------------------------------------

@@ -25,6 +25,7 @@ typedef struct {
     uint8_t  do_stdev;
     uint8_t  trk_stat;      /* b0 pr valid, b1 cp valid, b2 half-cyc valid     */
     uint8_t  half_cyc_sub;  /* b3 of trkStat: half cycle subtracted            */
+    uint8_t  freq_id;       /* GLONASS frequency channel + 7 (0..13)           */
 } ubx_meas_aux_t;
 
 /* Encode one UBX-RXM-RAWX. Returns message length, or 0 if it would overflow.
@@ -37,11 +38,17 @@ int ubx_encode_rawx(unsigned char *buf, int size, gtime_t time,
 int ubx_encode_sfrbx_gps(unsigned char *buf, int size, int prn, int id,
                          const eph_t *eph, double tow);
 
-/* Encode one UBX-RXM-SFRBX carrying GLONASS navigation string `m` (1..4) for
- * `slot`. Only what decode_glostr() checks is real -- string number, tb in
- * string 2, slot in string 4, Hamming bits -- so the ephemeris it yields is
- * zero-valued: enough to test framing and buffering, not orbit maths. */
-int ubx_encode_sfrbx_glo(unsigned char *buf, int size, int slot, int m, int tb);
+/* Encode one UBX-RXM-SFRBX carrying GLONASS navigation string `m` (1..4) of
+ * `geph`, as transmitted in the frame that starts at `tframe` (which sets tk
+ * and the frame id). Strings 1-4 of one frame decode, through decode_gnav()
+ * and decode_glostr(), to exactly `geph` when its values sit on the broadcast
+ * resolution grid -- sim_make_constellation() puts them there. */
+int ubx_encode_sfrbx_glo(unsigned char *buf, int size, const geph_t *geph,
+                         int m, gtime_t tframe);
+
+/* Pack GLONASS navigation string `m` (1..4) into s[0..10], MSB first as
+ * decode_glostr() reads it, Hamming bits included. */
+void glo_nav_string(unsigned char *s, const geph_t *geph, int m, gtime_t tframe);
 
 /* Pack a 30-byte GPS LNAV subframe (10 words x 24 data bits, no parity).
  * Exposed so tests can check the encoder against decode_frame() directly. */

@@ -22,14 +22,28 @@ typedef struct {
     uint32_t max_us, mean_us;
 } run_result_t;
 
+/* One engine and one scenario serve every test, lent by the caller through
+ * test_rtk_suite(): main() below allocates them for the host, and the
+ * on-target runner (app/test_target.c) does the same on the RP2350. Each test
+ * re-initialises both. Two static engines here used to be 340 KB of bss,
+ * which left the target too little heap for the engine to start. */
+static rtkeng_t *g_eng;
+static sim_scenario_t *g_sim;
+
+/* Epoch buffers for the tests that drive the simulator by hand: ~7 KB, well
+ * past the 8 KB the RP2350 gives core 0's stack once RTKLIB is on top. */
+static obsd_t g_obs[SIM_MAXSAT];
+static ubx_meas_aux_t g_aux[SIM_MAXSAT];
+static unsigned char g_buf[UBX_MAX_MSG];
+
 /* Run `nepoch` epochs and summarise. `warmup` epochs are excluded from the
  * accuracy statistics so convergence does not pollute the steady-state numbers. */
 static void run_scenario(const sim_scenario_cfg_t *scfg, const rtkeng_cfg_t *ecfg,
                          int nepoch, int warmup, run_result_t *res,
                          void (*hook)(sim_scenario_t*,rtkeng_t*,int))
 {
-    static sim_scenario_t s;      /* static: too big for a stack frame */
-    static rtkeng_t eng;
+    sim_scenario_t *s=g_sim;
+    rtkeng_t *eng=g_eng;
     rtkeng_cfg_t cfg=*ecfg;
     double herr,e3d,sh=0,s3=0,sh_all=0;
     int i,nh=0,nall=0;
@@ -37,33 +51,33 @@ static void run_scenario(const sim_scenario_cfg_t *scfg, const rtkeng_cfg_t *ecf
     memset(res,0,sizeof(*res));
     res->first_fix_epoch=-1;
 
-    sim_scenario_init(&s,scfg);
+    sim_scenario_init(s,scfg);
     /* the engine must be told where the base actually is */
-    memcpy(cfg.base_ecef,s.base.pos,sizeof(double)*3);
+    memcpy(cfg.base_ecef,s->base.pos,sizeof(double)*3);
 
-    if (!rtkeng_init(&eng,&cfg)) { printf("  rtkeng_init FAILED\n"); return; }
+    if (!rtkeng_init(eng,&cfg)) { printf("  rtkeng_init FAILED\n"); return; }
 
     for (i=0;i<nepoch;i++) {
-        if (hook) hook(&s,&eng,i);
-        if (!sim_scenario_step(&s,&eng)) continue;
+        if (hook) hook(s,eng,i);
+        if (!sim_scenario_step(s,eng)) continue;
 
         res->nsol++;
-        switch (eng.rtk.sol.stat) {
+        switch (eng->rtk.sol.stat) {
             case SOLQ_FIX:    res->nfix++;    break;
             case SOLQ_FLOAT:  res->nfloat++;  break;
             case SOLQ_SINGLE: res->nsingle++; break;
             default: break;
         }
-        if (eng.rtk.sol.stat==SOLQ_FIX&&res->first_fix_epoch<0) {
+        if (eng->rtk.sol.stat==SOLQ_FIX&&res->first_fix_epoch<0) {
             res->first_fix_epoch=i;
         }
         if (i<warmup) continue;
 
-        sim_scenario_error(&s,&eng,&herr,&e3d);
-        if (eng.rtk.sol.stat!=SOLQ_NONE) {
+        sim_scenario_error(s,eng,&herr,&e3d);
+        if (eng->rtk.sol.stat!=SOLQ_NONE) {
             sh_all+=herr*herr; nall++;
         }
-        if (eng.rtk.sol.stat==SOLQ_FIX) {
+        if (eng->rtk.sol.stat==SOLQ_FIX) {
             sh+=herr*herr; s3+=e3d*e3d; nh++;
             if (herr>res->max_h) res->max_h=herr;
         }
@@ -71,10 +85,10 @@ static void run_scenario(const sim_scenario_cfg_t *scfg, const rtkeng_cfg_t *ecf
     res->rms_h    =nh  ?sqrt(sh/nh)      :-1.0;
     res->rms_3d   =nh  ?sqrt(s3/nh)      :-1.0;
     res->rms_h_all=nall?sqrt(sh_all/nall):-1.0;
-    res->max_us   =eng.stats.max_us;
-    res->mean_us  =eng.stats.solutions?
-                   (uint32_t)(eng.stats.total_us/eng.stats.solutions):0;
-    rtkeng_free(&eng);
+    res->max_us   =eng->stats.max_us;
+    res->mean_us  =eng->stats.solutions?
+                   (uint32_t)(eng->stats.total_us/eng->stats.solutions):0;
+    rtkeng_free(eng);
 }
 
 static void report(const char *name, const run_result_t *r)
@@ -240,13 +254,10 @@ static void test_half_cycle_subtracted(void)
 /* --- 4. base station link dropout ----------------------------------------- */
 static void test_base_outage(void)
 {
-    static sim_scenario_t s;
-    static rtkeng_t eng;
+    sim_scenario_t *s=g_sim;
+    rtkeng_t *eng=g_eng;
     sim_scenario_cfg_t scfg;
     rtkeng_cfg_t ecfg;
-    unsigned char buf[UBX_MAX_MSG];
-    obsd_t obs[SIM_MAXSAT];
-    ubx_meas_aux_t aux[SIM_MAXSAT];
     double herr,e3d;
     int i,n,len,fixed_before=0,degraded_during=0,recovered=0;
 
@@ -254,41 +265,148 @@ static void test_base_outage(void)
 
     sim_scenario_default(&scfg);
     rtkeng_default_cfg(&ecfg);
-    sim_scenario_init(&s,&scfg);
-    memcpy(ecfg.base_ecef,s.base.pos,sizeof(double)*3);
+    sim_scenario_init(s,&scfg);
+    memcpy(ecfg.base_ecef,s->base.pos,sizeof(double)*3);
     ecfg.max_age=10.0;
-    rtkeng_init(&eng,&ecfg);
+    rtkeng_init(eng,&ecfg);
 
-    for (i=0;i<80;i++) sim_scenario_step(&s,&eng);
-    fixed_before=(eng.rtk.sol.stat==SOLQ_FIX);
+    for (i=0;i<80;i++) sim_scenario_step(s,eng);
+    fixed_before=(eng->rtk.sol.stat==SOLQ_FIX);
     CHECK(fixed_before,"fixed before the outage");
 
     /* 40 epochs of rover-only data: the base stream is cut entirely. */
     for (i=0;i<40;i++) {
-        n=sim_observe(&s.con,&s.rover,&s.cfg.err,s.time,s.cfg.base_llh,
-                      obs,aux,SIM_MAXSAT);
-        len=ubx_encode_rawx(buf,sizeof(buf),s.time,obs,n,aux);
-        rtkeng_rover_buf(&eng,buf,len);
-        s.time=timeadd(s.time,1.0);
-        s.epoch++;
+        n=sim_observe(&s->con,&s->rover,&s->cfg.err,s->time,s->cfg.base_llh,
+                      g_obs,g_aux,SIM_MAXSAT);
+        len=ubx_encode_rawx(g_buf,sizeof(g_buf),s->time,g_obs,n,g_aux);
+        rtkeng_rover_buf(eng,g_buf,len);
+        s->time=timeadd(s->time,1.0);
+        s->epoch++;
     }
     /* Once the correction ages past max_age, rtkpos() must fall back to the
      * single-point solution rather than reporting a stale fix. */
-    degraded_during=(eng.rtk.sol.stat!=SOLQ_FIX);
+    degraded_during=(eng->rtk.sol.stat!=SOLQ_FIX);
     CHECK(degraded_during,"drops out of FIX when corrections age out (stat=%d)",
-          eng.rtk.sol.stat);
-    sim_scenario_error(&s,&eng,&herr,&e3d);
+          eng->rtk.sol.stat);
+    sim_scenario_error(s,eng,&herr,&e3d);
     CHECK(herr<15.0,"still a usable single-point position (%.2f m)",herr);
 
-    for (i=0;i<90;i++) sim_scenario_step(&s,&eng);
-    recovered=(eng.rtk.sol.stat==SOLQ_FIX||eng.rtk.sol.stat==SOLQ_FLOAT);
-    sim_scenario_error(&s,&eng,&herr,&e3d);
+    for (i=0;i<90;i++) sim_scenario_step(s,eng);
+    recovered=(eng->rtk.sol.stat==SOLQ_FIX||eng->rtk.sol.stat==SOLQ_FLOAT);
+    sim_scenario_error(s,eng,&herr,&e3d);
     CHECK(recovered,"recovers a carrier-phase solution after the link returns "
-          "(stat=%d)",eng.rtk.sol.stat);
+          "(stat=%d)",eng->rtk.sol.stat);
     CHECK(herr<0.5,"back to %.4f m horizontal",herr);
 
-    rtkeng_free(&eng);
+    rtkeng_free(eng);
 }
+
+/* --- 6. GLONASS ------------------------------------------------------------ */
+#if NSATGLO>0
+/* One hook for the GLONASS scenarios: optional per-channel code biases on the
+ * rover, optional receiver-wide lock losses, and a count of GLONASS
+ * satellites in the solution on the last epoch. */
+static int g_glo_ifb, g_glo_lockloss_s, g_glo_last, g_glo_used;
+static void glo_hook(sim_scenario_t *s, rtkeng_t *eng, int epoch)
+{
+    int k;
+    if (epoch==0&&g_glo_ifb) {
+        /* The field capture (M8P base and rover, 2026-09-21) showed GLONASS
+         * code DDs offset by +3..+7 m per satellite. Different channels, same
+         * hardware pair: a fixed, channel-dependent bias on one receiver. */
+        static const double ifb[14]={
+            4.1,-1.8,5.6,2.4,6.9,0.7,3.3,5.0,-2.6,4.4,1.2,6.1,-0.9,3.8
+        };
+        for (k=0;k<14;k++) s->rover.glo_code_bias[k]=ifb[k];
+    }
+    if (g_glo_lockloss_s&&epoch>0&&epoch%g_glo_lockloss_s==0) {
+        /* every satellite at once, as the field receiver did every ~25 s */
+        for (k=0;k<s->con.n;k++) sim_force_slip(&s->rover,s->con.sat[k]);
+    }
+    if (epoch==g_glo_last) {
+        g_glo_used=0;
+        for (k=0;k<s->con.n;k++) {
+            int sat=s->con.sat[k];
+            if (satsys(sat,NULL)==SYS_GLO&&eng->rtk.ssat[sat-1].vsat[0]) g_glo_used++;
+        }
+    }
+}
+
+static void glo_scenario(const char *name, int kinematic, int ifb, int lockloss_s,
+                         int rtcm, int nepoch, run_result_t *r)
+{
+    sim_scenario_cfg_t scfg;
+    rtkeng_cfg_t ecfg;
+
+    sim_scenario_default(&scfg);
+    scfg.motion=kinematic?SIM_MOTION_CIRCLE:SIM_MOTION_STATIC;
+    rtkeng_default_cfg(&ecfg);
+    ecfg.mode=kinematic?PMODE_KINEMA:PMODE_STATIC;
+    ecfg.dynamics=0;
+    if (rtcm) {
+        scfg.base_fmt=SIM_BASE_RTCM3;
+        ecfg.base_fmt=RTKENG_BASE_RTCM3;
+    }
+    g_glo_ifb=ifb; g_glo_lockloss_s=lockloss_s; g_glo_last=nepoch-1; g_glo_used=0;
+    run_scenario(&scfg,&ecfg,nepoch,60,r,glo_hook);
+    g_glo_ifb=g_glo_lockloss_s=0;
+    report(name,r);
+    printf("  [%s] GLONASS satellites in the solution at the end: %d\n",name,g_glo_used);
+}
+
+static void test_glonass(void)
+{
+    run_result_t r;
+
+    TEST_BEGIN("GPS+GLONASS, static");
+    glo_scenario("gps+glo",0,0,0,0,180,&r);
+    CHECK(g_glo_used>=4,"GLONASS satellites used in the solution (%d)",g_glo_used);
+    CHECK(r.first_fix_epoch>=0&&r.first_fix_epoch<60,"fixed within 60 epochs (at %d)",
+          r.first_fix_epoch);
+    CHECK(r.nfix>=140,"stays fixed (%d fixed epochs)",r.nfix);
+    CHECK(r.rms_h>=0.0&&r.rms_h<0.05,"fixed horizontal RMS %.4f m < 5 cm",r.rms_h);
+}
+
+static void test_glonass_code_bias(void)
+{
+    run_result_t r;
+
+    /* The field fault, both halves of it: GLONASS pseudoranges offset per
+     * channel by metres, and the rover dropping lock on every satellite every
+     * ~25 s so the filter keeps leaning on pseudoranges. At RTKLIB's stock
+     * GLONASS code weight this fixed confidently on wrong integers; with
+     * EFACT_GLO_CODE (rtkpico_config.h) a fix must never be wrong, even if it
+     * comes less often. */
+    TEST_BEGIN("GLONASS code inter-frequency biases + receiver-wide lock loss");
+
+    glo_scenario("ifb static",0,1,25,0,300,&r);
+    CHECK(r.nfix>0,"static: fixes between lock losses (%d)",r.nfix);
+    CHECK(r.max_h<0.10,"static: no wrong fix (worst fixed error %.3f m)",r.max_h);
+
+    glo_scenario("ifb kinematic",1,1,25,0,300,&r);
+    CHECK(r.nfix>0,"kinematic: fixes between lock losses (%d)",r.nfix);
+    CHECK(r.max_h<0.10,"kinematic: no wrong fix (worst fixed error %.3f m)",r.max_h);
+}
+
+#ifndef RTKPICO_TARGET_SUITE
+static void test_glonass_rtcm3_base(void)
+{
+    run_result_t r;
+
+    /* The base as the field sends it: 1005 + MSM7 1077/1087, where the rover
+     * learns each GLONASS satellite's channel -- and so the base's carrier
+     * wavelength -- from MSM7's extended satellite info. Host only: the
+     * encoder's rtcm_t is ~95 KB of heap the target suite cannot spare. */
+    TEST_BEGIN("base over RTCM3 MSM7 (1005 + 1077 + 1087)");
+    glo_scenario("rtcm3",0,0,0,1,180,&r);
+    CHECK(g_glo_used>=4,"GLONASS satellites used in the solution (%d)",g_glo_used);
+    CHECK(r.first_fix_epoch>=0&&r.first_fix_epoch<60,"fixed within 60 epochs (at %d)",
+          r.first_fix_epoch);
+    CHECK(r.nfix>=140,"stays fixed (%d fixed epochs)",r.nfix);
+    CHECK(r.rms_h>=0.0&&r.rms_h<0.05,"fixed horizontal RMS %.4f m < 5 cm",r.rms_h);
+}
+#endif
+#endif
 
 /* --- 5. baseline length --------------------------------------------------- */
 /* Single-frequency RTK is limited by the ionospheric gradient. This documents
@@ -330,11 +448,10 @@ static void test_baseline_lengths(void)
     }
 }
 
-#ifdef RTKPICO_TARGET_SUITE
-#define main test_rtk_main
-#endif
-int main(void)
+int test_rtk_suite(rtkeng_t *eng, sim_scenario_t *sim)
 {
+    g_eng=eng;
+    g_sim=sim;
     printf("RTKLIB Pico port - RTK engine tests\n");
     printf("MAXSAT=%d NFREQ=%d MAXOBS=%d  sizeof(rtkeng_t)=%zu bytes\n",
            MAXSAT,NFREQ,MAXOBS,sizeof(rtkeng_t));
@@ -344,6 +461,28 @@ int main(void)
     test_half_cycle_subtracted();
     test_base_outage();
     test_baseline_lengths();
+#if NSATGLO>0
+    test_glonass();
+    test_glonass_code_bias();
+#ifndef RTKPICO_TARGET_SUITE
+    test_glonass_rtcm3_base();
+#endif
+#endif
     TEST_SUMMARY();
     return g_tests_failed?1:0;
 }
+
+#ifndef RTKPICO_TARGET_SUITE
+int main(void)
+{
+    /* allocated as the target runner does, so both run the same code */
+    rtkeng_t *eng=(rtkeng_t *)malloc(sizeof(rtkeng_t));
+    sim_scenario_t *sim=(sim_scenario_t *)malloc(sizeof(sim_scenario_t));
+    int ret;
+    if (!eng||!sim) { printf("cannot allocate the engine\n"); return 1; }
+    ret=test_rtk_suite(eng,sim);
+    free(sim);
+    free(eng);
+    return ret;
+}
+#endif

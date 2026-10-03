@@ -64,6 +64,36 @@
 #define ENACMP
 #endif
 
+/* GLONASS pseudoranges carry inter-frequency biases: every FDMA channel sees
+ * a different group delay through the antenna and front end, so unless base
+ * and rover hardware match, code double differences are offset per satellite.
+ * The 2026-09-21 field capture (M8P base and rover) measured +3 to +7 m, against
+ * ~0 for GPS. At RTKLIB's stock weight those offsets pulled the float solution
+ * about a metre, and every fix -- ours and stock RTKLIB 2.4.3's alike -- landed
+ * on wrong integers. GLONASS carrier phase was clean (phase DDs flat to a few
+ * cm), so keep it and give GLONASS code ten times the sigma, ~4.5 m at zenith:
+ * x3 still let wrong fixes through, x10 to x100 were indistinguishable, and
+ * static replays went from 79 wrong fixes of 79 to 0 of 1008 (4 mm RMS).
+ * pico/test/replay.c --dd shows the offsets for any capture.                 */
+#ifndef EFACT_GLO_CODE
+#define EFACT_GLO_CODE 10.0
+#endif
+
+/* RTKLIB's ratio test only asks whether the best integer set beats the
+ * runner-up by thresar; it never asks whether the best set fits the float
+ * ambiguities at all. Under multipath the float solution drifts, and two wrong
+ * sets can both be far from it while one is still 3x closer than the other.
+ * LAMBDA's s0 is that best-set distance in the ambiguities' own covariance, ~1
+ * per ambiguity when the model holds. The 2026-10-03 backyard captures (houses
+ * and trees; the receiver's own RTK fixed wrong too) gave 878 fixes, all wrong;
+ * a limit of 3 removed 778 of them (636 -> 4 in the 30-minute run) and leaves
+ * every simulator scenario's fix count unchanged; 2 starts costing fixes on a
+ * 10 km baseline. What still passes is mostly the first minute after a filter
+ * start. replay --maxs0 X sweeps it.                                          */
+#ifndef LAMBDA_MAX_S0NB
+#define LAMBDA_MAX_S0NB 3.0
+#endif
+
 /* SBAS satellites occupy MAXSAT slots (and therefore EKF states, ~28 KB of
  * covariance) even when SBAS is unused. An empty PRN range removes them while
  * keeping satno()/satsys() arithmetic correct and keeping the

@@ -18,10 +18,15 @@ extern "C" {
 #define SIM_MOTION_CIRCLE 1     /* drone orbiting the take-off point */
 #define SIM_MOTION_LINE   2
 
+#define SIM_BASE_UBX      0     /* base as RXM-RAWX, like a second receiver  */
+#define SIM_BASE_RTCM3    1     /* base as RTCM3 1005 + MSM7, like the field  */
+
 typedef struct {
     double base_llh[3];         /* base station (deg,deg,m)                  */
     double rover_llh[3];        /* rover start point                         */
-    int    ngps, ngal;
+    int    ngps, ngal, nglo;    /* constellation sizes; a system the build
+                                   leaves out is simply not generated        */
+    int    base_fmt;            /* SIM_BASE_*; configure the engine to match */
     int    week;
     double toe;                 /* time of ephemeris (s in week)             */
     double start_tow;           /* first epoch (s in week)                   */
