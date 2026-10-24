@@ -1,7 +1,8 @@
 """Finish the local footprint library. Run with KiCad's Python from hardware/esc.
 
 * QFN-28 for the AT32F421G8U7: the prototype footprint had pads 8, 23 and 24
-  removed. They are restored so every pin is soldered.
+  removed. They are restored so every pin is soldered, and the pads are
+  narrowed to 0.18 mm so 0.2 mm tracks fit between them.
 * JST SH 8-pin top entry: the stock KiCad footprint names both mounting pads
   "MP"; the schematic symbol calls them P1 and P2.
 * ESC_Pads_Octagon60: battery pads, FC wire pads, mounting holes and motor pads
@@ -40,6 +41,16 @@ def fix_qfn28():
         p.SetNumber(num)
         p.SetFPRelativePosition(v(x, pcbnew.ToMM(src.GetFPRelativePosition().y)))
         fp.Add(p)
+    # 0.18 mm wide pads leave 0.22 mm between neighbours, so a 0.2 mm track
+    # can reach every pin at PCBWay's 0.2 mm clearance
+    for p in fp.Pads():
+        sz = p.GetSize(pcbnew.F_Cu)
+        if min(sz.x, sz.y) < MM(0.3):
+            if sz.x < sz.y:
+                sz.x = MM(0.18)
+            else:
+                sz.y = MM(0.18)
+            p.SetSize(pcbnew.F_Cu, sz)
     io.FootprintSave(LIB, fp)
 
 

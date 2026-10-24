@@ -180,7 +180,7 @@ class Floor:
                     return False
         return True
 
-    def free(self, side, r, gap=0.15):
+    def free(self, side, r, gap=0.22):
         if not self.inside(r):
             return False
         for (o, _) in self.rects[side]:
@@ -193,7 +193,7 @@ class Floor:
                 return False
         return True
 
-    def settle(self, fp, x, y, axis, angle, bottom, max_r=12.0, step=0.2, gap=0.15):
+    def settle(self, fp, x, y, axis, angle, bottom, max_r=12.0, step=0.2, gap=0.22):
         """Place fp at the free spot nearest (x, y)."""
         side = "bot" if bottom else "top"
         place(fp, x, y, axis, angle, bottom)
@@ -289,6 +289,26 @@ def rot_pts(pts, k):
 
 
 # --------------------------------------------------------------- main
+PHASE_HW = 2.5   # half width of a phase strip; strips are 1.5 mm apart
+
+
+def phase_top_pts(hs, y, k):
+    """Top phase strip of one half-bridge, in channel coordinates. It covers the
+    high-side source pins, with a notch round the gate pin so the gate track
+    can leave sideways into the gap between strips instead of being boxed in
+    by phase copper."""
+    x0, x1 = L.FET_X + 3.37 - 1.15, L.HALF + 1
+    y0, y1 = y - PHASE_HW, y + PHASE_HW
+    gate = next(p for p in hs.Pads() if p.GetNumber() == "2")
+    gx, gy = L.rot(*xy(gate.GetPosition()), -k)
+    nx1 = gx + 0.54 + 0.4
+    if gy > y:
+        ny = gy - 0.29 - 0.3
+        return [(x0, y0), (x1, y0), (x1, y1), (nx1, y1), (nx1, ny), (x0, ny)]
+    ny = gy + 0.29 + 0.3
+    return [(x0, ny), (nx1, ny), (nx1, y0), (x1, y0), (x1, y1), (x0, y1)]
+
+
 def build(netlist_path, out_path):
     nl = Netlist(netlist_path)
     board = pcbnew.BOARD()
@@ -355,13 +375,16 @@ def build(netlist_path, out_path):
             y = L.PHASE_Y[ph]
             for dy in (-1.15, 1.15):
                 gx, gy = L.rot(cap_x - 2.05 - 0.7, y + dy, k)
-                add_via(board, nets["GND"], gx, gy)
-                floor.add("bot", (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55), "via")
+                rr = (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55)
+                if floor.free("top", rr) and floor.free("bot", rr):
+                    add_via(board, nets["GND"], gx, gy)
+                    floor.add("both", rr, "via")
             m = nets[f"/{ch}/Motor{ph}"]
             for sx in (L.FET_X + 3.37 + 0.75, L.FET_X + 3.37 + 1.85):
                 for sy in (-1.3, 0.0, 1.3):
                     px, py = L.rot(sx, y + sy, k)
                     add_via(board, m, px, py)
+                    floor.add("both", (px - 0.6, py - 0.6, px + 0.6, py + 0.6), "via")
 
     # ---- channel logic. Gate driver, bootstrap caps and gate resistors on the
     # bottom next to the FETs; MCU and its parts on top, on a GND island in
@@ -430,8 +453,8 @@ def build(netlist_path, out_path):
         for ph in "ABC":
             y = L.PHASE_Y[ph]
             n = nets[f"/{ch}/Motor{ph}"]
-            top = rect_pts(L.FET_X + 3.37 - 1.15, y - 2.75, L.HALF + 1, y + 2.75)
-            bot = rect_pts(L.FET_X - 3.37 + 1.35, y - 2.75, L.HALF + 1, y + 2.75)
+            top = phase_top_pts(fps[roles[ch][f"HS{ph}"]], y, k)
+            bot = rect_pts(L.FET_X - 3.37 + 1.35, y - PHASE_HW, L.HALF + 1, y + PHASE_HW)
             add_zone(board, n, pcbnew.F_Cu, rot_pts(top, k), 2, name=f"{ch} {ph} top")
             add_zone(board, n, pcbnew.B_Cu, rot_pts(bot, k), 2, name=f"{ch} {ph} bottom")
     # top GND island under each channel's MCU, stitched to the bottom pour

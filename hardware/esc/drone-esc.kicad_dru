@@ -8,11 +8,9 @@
   (constraint silk_clearance (min 0.15mm))
   (condition "A.Type == 'Pad'"))
 
-# Phase, battery and +BATT copper sees 25 V steps at the PWM frequency; keep a
-# bit more air between it and anything else.
-(rule "power copper clearance"
-  (constraint clearance (min 0.3mm))
-  (condition "A.NetClass == 'Power' && A.Net != B.Net && B.Type != 'Pad'"))
+# Phase, battery and +BATT copper sees 25 V steps at the PWM frequency. The
+# pours keep 0.3 mm from other nets (set on each zone); tracks and pads use the
+# fab minimum.
 
 # Fine-pitch QFN pads (0.4 mm pitch MCU) are 0.2 mm apart. That is the fab
 # minimum, so tracks escaping them are allowed down to it.
