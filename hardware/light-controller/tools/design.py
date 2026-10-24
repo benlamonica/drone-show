@@ -161,7 +161,7 @@ B = "mcu"
 # GPIO8/9 (PWM4 A/B) and for the bottom row on GPIO2/3 (PWM1 A/B).
 gpio = {
     "2": "UART_TX", "3": "UART_RX", "4": "PWM_G", "5": "PWM_W", "12": "PWM_R", "13": "PWM_B",
-    "9": "STAT_LED", "14": "GPIO10", "15": "GPIO11", "27": "GPIO16",
+"14": "GPIO10", "15": "GPIO11", "27": "GPIO16",
     "35": "WL_ON", "36": "WL_D", "37": "WL_CS", "40": "NTC_SENSE", "41": "VBAT_SENSE",
     "43": "WL_CLK",
 }
@@ -172,7 +172,7 @@ mcu.update({"46": "VREG_AVDD", "48": "VREG_LX", "47": "GND", "61": "GND", "21": 
             "60": "QSPI_SS", "56": "QSPI_SCLK", "57": "QSPI_SD0", "59": "QSPI_SD1",
             "58": "QSPI_SD2", "55": "QSPI_SD3"})
 mcu.update(gpio)
-for n in ("7", "8", "10", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34", "42", "51", "52"):
+for n in ("7", "8", "9", "10", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34", "42", "51", "52"):
     mcu[n] = None   # unused GPIO
 add("U2", ("RP2350A", "RP2350A", "QFN60", "Raspberry Pi", "RP2350A (or RP2354A, then omit U3)"), mcu, B)
 for i, _ in enumerate(("1", "11", "20", "30", "38", "45")):
@@ -198,8 +198,6 @@ add("U3", ("W25Q16", "W25Q16JVSNIQ", "SOIC8", "Winbond", "W25Q16JVSNIQ"),
      "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B)
 add("C29", "100n", two("+3V3", "GND"), B)
 add("R11", "10k", two("+3V3", "RUN"), B)
-add("R21", "1k", two("STAT_LED", "STAT_LED_A"), B)
-add("D5", "led_ind", {"1": "GND", "2": "STAT_LED_A"}, B)
 
 # --- SWD, FC UART, test pads (no USB: program over SWD, then over Wi-Fi) -------------------------------------------------------
 B = "io"

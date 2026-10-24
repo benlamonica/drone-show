@@ -24,7 +24,7 @@ from gen_pcb import PCB  # noqa: E402
 RES = 0.025                        # mm per cell
 HX, HY = 73.0 / 2, 35.0 / 2
 W, H = int(73.0 / RES), int(35.0 / RES)
-CLR = 0.152                        # 0.15 rule + a hair for the grid
+CLR = 0.165                        # 0.15 rule + margin for the grid
 VIA_D, VIA_DRILL = 0.6, 0.3
 ANT_X = -29.3
 LAYERS = (pcbnew.F_Cu, pcbnew.B_Cu)
@@ -46,6 +46,23 @@ def raster(items, layer, grow):
         if not it.IsOnLayer(layer):
             continue
         cls = it.GetClass()
+        if cls == "ZONE":
+            ps = it.GetFilledPolysList(layer).CloneDropTriangulation()
+            if grow:
+                ps.Inflate(nm(grow), 16)
+            for k in range(ps.OutlineCount()):
+                ol = ps.Outline(k)
+                pts = [((pcbnew.ToMM(ol.CPoint(i).x) + HX) / RES, (pcbnew.ToMM(ol.CPoint(i).y) + HY) / RES)
+                       for i in range(ol.PointCount())]
+                if len(pts) > 2:
+                    d.polygon(pts, fill=1)
+                for h in range(ps.HoleCount(k)):
+                    hl = ps.Hole(k, h)
+                    hp = [((pcbnew.ToMM(hl.CPoint(i).x) + HX) / RES, (pcbnew.ToMM(hl.CPoint(i).y) + HY) / RES)
+                          for i in range(hl.PointCount())]
+                    if len(hp) > 2:
+                        d.polygon(hp, fill=0)
+            continue
         if cls in ("PCB_TRACK", "PCB_VIA"):
             r = (pcbnew.ToMM(it.GetWidth()) / 2 + grow + 0.01) / RES
             a, b = (it.GetPosition(), it.GetPosition()) if cls == "PCB_VIA" else (it.GetStart(), it.GetEnd())
@@ -74,6 +91,9 @@ def items_by_net(board):
             by.setdefault(p.GetNetname(), []).append(p)
     for t in board.GetTracks():
         by.setdefault(t.GetNetname(), []).append(t)
+    for z in board.Zones():
+        if z.GetNetname() and not z.GetIsRuleArea() and z.IsFilled():
+            by.setdefault(z.GetNetname(), []).append(z)
     return by
 
 
@@ -124,7 +144,8 @@ def route_net(board, net, by, rip=False):
                 dh.ellipse((x - r, y - r, x + r, y + r), fill=1)
     vblock |= np.array(holes, dtype=bool)
 
-    for _ in range(20):
+    failed = set()
+    for _ in range(60):
         own = items_by_net(board).get(net, [])
         cu = [raster(own, ly, 0.0) for ly in LAYERS]
         lab = [ndimage.label(cu[i], structure=np.ones((3, 3)))[0] for i in range(2)]
@@ -151,8 +172,15 @@ def route_net(board, net, by, rip=False):
             return True
         # source: the smallest piece; targets: everything else of this net
         sizes = {i: int((comp[0] == i).sum() + (comp[1] == i).sum()) for i in ids}
-        src = min(sizes, key=sizes.get)
-        path = search(comp, src, block, vblock, soft if rip else None)
+        biggest = max(sizes, key=sizes.get)
+        path = None
+        for src in sorted(sizes, key=sizes.get):
+            if src in failed or src == biggest and len(sizes) > 2:
+                continue
+            path = search(comp, src, block, vblock, soft if rip else None)
+            if path is not None or net != "/GND":
+                break
+            failed.add(src)
         if path is None:
             print(f"  {net}: no path")
             return False if not rip else None
@@ -184,7 +212,7 @@ def rip_up(board, net, new):
     nets = set()
     for t in hit:
         nets.add(t.GetNetname())
-        board.Remove(t)
+        board.Delete(t)
     return nets
 
 
@@ -196,7 +224,7 @@ def prune_dangling(board):
         for t in tracks:
             for end in (t.GetStart(), t.GetEnd()):
                 if not touches(board, t, end):
-                    board.Remove(t)
+                    board.Delete(t)
                     removed += 1
                     break
         if not removed:
@@ -364,6 +392,18 @@ def main():
                 print(f"{net}: kept as is ({time.time() - t0:.0f}s)", flush=True)
             else:
                 print(f"{net}: routed, rerouted {sorted(ripped)} ({time.time() - t0:.0f}s)", flush=True)
+    # ground: connect pads and pour islands the pours left stranded
+    if "--gnd" in sys.argv:
+        for z in board.Zones():
+            if not z.GetIsRuleArea():
+                z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)
+        pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+        for _ in range(6):
+            ok = route_net(board, "/GND", items_by_net(board))
+            pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+            print("/GND:", "connected" if ok else "pieces left", flush=True)
+            if ok:
+                break
     # rip-up and reroute: whatever is still open may push other nets' tracks aside
     if "--rip" in sys.argv:
         queue = unconnected_nets(board)

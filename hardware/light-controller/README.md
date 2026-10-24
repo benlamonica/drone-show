@@ -12,7 +12,7 @@ Cree XP-E2 LEDs (3 red, 3 green, 3 blue, 3 white) straight from a 4S-6S pack.
 | LEDs | 12 x XP-E2 on the bottom side, facing the diffuser |
 | Input | 4S-6S (12-26 V), reverse-polarity P-FET, SMBJ26A TVS |
 | Logic supply | LMR51420 buck to 3.3 V |
-| Interfaces | JST-SH UART to the flight controller, JST-SH SWD, 5 test pads |
+| Interfaces | JST-SH UART to the flight controller, JST-SH SWD, 4 test pads |
 | Board | 2 layers, 1.6 mm, 1 oz, smallest passive 0603, PCBWay standard rules |
 
 ## Files
@@ -68,16 +68,17 @@ is in reset. `C51`-`C54` are not fitted; fit them only to switch to analog dimmi
 | 0 / 1 | UART TX / RX to the flight controller (MAVLink) |
 | 2 | PWM green (PWM1 A) |
 | 3 | PWM white (PWM1 B) |
-| 6 | Status LED |
 | 8 | PWM red (PWM4 A) |
 | 9 | PWM blue (PWM4 B) |
-| 10, 11, 16, 28 | Spare, on test pads TP2-TP5 |
+| 10, 11, 16 | Spare, on test pads TP2-TP4 |
 | 23, 24, 25, 29 | RM2: WL_ON, data, CS, clock (same as Pico 2 W) |
 | 26 (ADC0) | NTC board temperature |
 | 27 (ADC1) | Battery voltage, 100k/10k divider (x11) |
 
 Because the radio uses the Pico 2 W pins, the stock `pico2_w` board definition and
-`pico_cyw43_arch` work unchanged.
+`pico_cyw43_arch` work unchanged. There is no separate status LED: use the CYW43
+`WL_GPIO0` LED (`cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, ...)`) as on a Pico 2 W, or
+the main LEDs themselves. GPIO 4-7, 12-15, 17-22 and 28 are unconnected.
 
 ## Programming: no USB
 
@@ -106,6 +107,23 @@ the power cap and NTC derating described above.
    netlist was verified to match the board pin for pin.
 4. **DRC.** Run DRC in KiCad with the project rules; see the routing notes below.
 5. **LED bins.** Any in-stock flux bin works; the MPNs in the BOM are typical ones.
+
+## Routing notes
+
+The board was routed by script (Freerouting, then a grid router with rip-up in
+`tools/finish_route.py`, then the `gnd_*` tools to tie every ground pad and pour island
+together with stitching vias). Current DRC with `light-controller.kicad_dru`:
+
+- 0 errors: no clearance, hole, width or unconnected items. The netlist on the board was
+  checked pad by pad against `tools/design.py`.
+- 76 silkscreen warnings (reference text overlapping other silk or clipped by the mask).
+  They are cosmetic; tidy the reference text in KiCad if you care about the labels.
+
+The tracks are machine-made and look it: there are short zig-zags and a few long
+detours. They are electrically fine. Ground pads use solid (not thermal) pour
+connections, so hand soldering ground pins needs a hot iron; reflow is unaffected.
+The 0.4 mm-pitch RP2350 fan-out uses 0.15 mm tracks and 0.3/0.6 mm vias, inside
+PCBWay's standard 6/6 mil, 0.3 mm process.
 
 ## PCBWay order settings
 

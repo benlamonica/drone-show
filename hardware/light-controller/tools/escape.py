@@ -121,3 +121,41 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def inner_via(board, pad, centre, offsets=(0.0, 0.2, -0.2, 0.4, -0.4)):
+    """Drop a via in the channel between the pad ring and the exposed pad, joined to
+    the pin by a short stub pointing inward. Frees the outside of the pin for others."""
+    c = pad.GetPosition()
+    dx, dy = c.x - centre.x, c.y - centre.y
+    ux, uy = (1 if dx > 0 else -1, 0) if abs(dx) > abs(dy) else (0, 1 if dy > 0 else -1)
+    r = mm(2.42)
+    for off in offsets:
+        if ux:
+            end = pcbnew.VECTOR2I(centre.x + ux * r, c.y + mm(off))
+        else:
+            end = pcbnew.VECTOR2I(c.x + mm(off), centre.y + uy * r)
+        bend = pcbnew.VECTOR2I(end.x, c.y) if ux else pcbnew.VECTOR2I(c.x, end.y)
+        segs = [(c, bend), (bend, end)] if off else [(c, end)]
+        shapes = [(pcbnew.F_Cu, pcbnew.SHAPE_SEGMENT(a, b, W)) for a, b in segs]
+        shapes.append((None, pcbnew.SHAPE_CIRCLE(end, VIA_D // 2)))
+        if not holes_ok(board, end) or collides(board, pad.GetNetname(), shapes):
+            continue
+        for a, b in segs:
+            if a == b:
+                continue
+            t = pcbnew.PCB_TRACK(board)
+            t.SetStart(a)
+            t.SetEnd(b)
+            t.SetWidth(W)
+            t.SetLayer(pcbnew.F_Cu)
+            t.SetNet(pad.GetNet())
+            board.Add(t)
+        v = pcbnew.PCB_VIA(board)
+        v.SetPosition(end)
+        v.SetWidth(VIA_D)
+        v.SetDrill(VIA_DRILL)
+        v.SetNet(pad.GetNet())
+        board.Add(v)
+        return True
+    return False

@@ -36,11 +36,14 @@ def main():
     shutil.make_archive(os.path.join(FAB, "light-controller-gerbers"), "zip", g)
 
     pos = os.path.join(FAB, "pos.csv")
-    cli("pos", "--format", "csv", "--units", "mm", "--side", "both", "--exclude-dnp", "-o", pos, PCB)
+    cli("pos", "--format", "csv", "--units", "mm", "--side", "both", "-o", pos, PCB)
     with open(pos) as f, open(os.path.join(FAB, "light-controller-cpl.csv"), "w", newline="") as o:
         w = csv.writer(o)
         w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
+        dnp = {p["ref"] for p in design.PARTS if p["dnp"]}
         for r in csv.DictReader(f):
+            if r["Ref"] in dnp:
+                continue
             w.writerow([r["Ref"], r["PosX"] + "mm", r["PosY"] + "mm",
                         "Top" if r["Side"] == "top" else "Bottom", r["Rot"]])
     os.remove(pos)
@@ -56,7 +59,7 @@ def main():
         w.writerow(["Item #", "Designator", "Qty", "Manufacturer", "Mfg Part #", "Description / Value",
                     "Package/Footprint", "Type", "Your Instructions / Notes"])
         for i, ((mfr, mpn, val, fp), refs) in enumerate(groups.items(), 1):
-            tht = fp.startswith("SolderWire") or fp.startswith("USB_C")
+            tht = fp.startswith("SolderWire")
             note = ""
             if fp == "SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm":
                 note = "Do not place: battery leads soldered by hand"

@@ -75,7 +75,7 @@ NEAR = {
     "D1": ("Q1", "1"), "R1": ("Q1", "1"),
     "R2": ("U2", "41"), "R3": ("U2", "41"), "C5": ("U2", "41"),
     "R22": ("U2", "40"), "C34": ("U2", "40"), "TH1": ("U2", "40"),
-    "R11": ("U2", "26"), "R21": ("U2", "9"), "D5": ("U2", "9"),
+    "R11": ("U2", "26"), "C27": ("Y1", "1"), "C28": ("Y1", "3"), "R8": ("Y1", "3"),
 }
 
 # Decoupling for the MCU goes on the bottom, directly under the QFN, so the top-side ring
@@ -83,6 +83,10 @@ NEAR = {
 BOTTOM = {"C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C21", "C23", "C24",
           "C25", "C26", "R11", "R2", "R3", "C5", "R22", "C34", "TH1",
           "R18", "R19", "R20", "D4", "C32", "C33"}
+
+# RP2350 supply pins that get a via inside the pad ring (see build()). A tuple is
+# adjacent pins: same net share one via, different nets get one each.
+INNER_VIAS = [("1",), ("6",), ("11",), ("20",), ("23",), ("30",), ("38", "39"), ("53", "54")]
 
 # LED driver cells: two columns x two rows between the MCU and the power entry.
 CELLS = {"R": (4.6, -1), "G": (4.6, 1), "B": (16.2, -1), "W": (16.2, 1)}
@@ -288,7 +292,7 @@ def legalize(fps, pads):
         put(ref, x, y, rot, side)
     # via fields that build() adds: under the MCU pad and beside each LED
     ux = PLACE["U2"][0]
-    occ.append(("B", (ux - 1.6, -1.6, ux + 1.6, 1.6), "EP vias"))
+    occ.append(("B", (ux - 2.8, -2.8, ux + 2.8, 2.8), "EP and supply vias"))
     # the LED array and its lanes: nothing else on the bottom there
     ys = LED_ROWS.values()
     occ.append(("B", (LED_COLS[0] - 3.0, min(ys) - 2.2, LED_COLS[-1] + 3.0, max(ys) + 2.2), "LED array"))
@@ -455,6 +459,48 @@ def build():
     for i in (-1, 0, 1):
         for j in (-1, 0, 1):
             via(ux + i * 1.0, uy + j * 1.0, gnd)
+    # Supply pins fan in, not out: a stub toward the exposed pad and a via in the
+    # channel between the pad ring and the EP, so the outside of the package is left
+    # to the signals. Decoupling sits on the bottom around it. Neighbouring supply
+    # pins on one side share a via or split +-0.2 mm to keep 0.8 mm via spacing.
+    u2 = fps["U2"]
+    c = u2.GetPosition()
+    for pins in INNER_VIAS:
+        pads = [u2.FindPadByNumber(n) for n in pins]
+        px = sum(p.GetPosition().x for p in pads) // len(pads)
+        py = sum(p.GetPosition().y for p in pads) // len(pads)
+        dx, dy = px - c.x, py - c.y
+        for k, p in enumerate(pads):
+            off = 0 if len(pads) == 1 or pads[0].GetNetname() == pads[-1].GetNetname() else (-0.2, 0.2)[k]
+            if abs(dx) > abs(dy):
+                end = pcbnew.VECTOR2I(c.x + (mm(2.42) if dx > 0 else -mm(2.42)),
+                                      (py if not off else p.GetPosition().y) + mm(off))
+                bend = pcbnew.VECTOR2I(end.x + (mm(0.25) if dx > 0 else -mm(0.25)), p.GetPosition().y)
+            else:
+                end = pcbnew.VECTOR2I((px if not off else p.GetPosition().x) + mm(off),
+                                      c.y + (mm(2.42) if dy > 0 else -mm(2.42)))
+                bend = pcbnew.VECTOR2I(p.GetPosition().x, end.y + (mm(0.25) if dy > 0 else -mm(0.25)))
+            # corner pins: keep the via clear of the next side's pads
+            lim = mm(2.0)
+            if abs(dx) > abs(dy):
+                end.y = max(c.y - lim, min(c.y + lim, end.y))
+            else:
+                end.x = max(c.x - lim, min(c.x + lim, end.x))
+            for a, b in ((p.GetPosition(), bend), (bend, end)):
+                t = pcbnew.PCB_TRACK(board)
+                t.SetStart(a)
+                t.SetEnd(b)
+                t.SetWidth(mm(0.15))
+                t.SetLayer(pcbnew.F_Cu)
+                t.SetNet(p.GetNet())
+                board.Add(t)
+            if k == 0 or off:
+                v = pcbnew.PCB_VIA(board)
+                v.SetPosition(end)
+                v.SetWidth(mm(0.6))
+                v.SetDrill(mm(0.3))
+                v.SetNet(p.GetNet())
+                board.Add(v)
 
     pcbnew.SaveBoard(PCB, board)
     print("saved", PCB, len(design.PARTS), "footprints", len(nets), "nets")
