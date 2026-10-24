@@ -304,7 +304,7 @@ def build():
     holes = [(sx * HOLE, sy * HOLE) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
     placed[:] = [(r, c) for r, c in placed if not r.startswith("H")]
 
-    def hits_hole(c, r=3.45):
+    def hits_hole(c, r=3.7):
         for hx, hy in holes:
             dx = max(c[0] - hx, 0, hx - c[2])
             dy = max(c[1] - hy, 0, hy - c[3])
@@ -386,6 +386,28 @@ def build():
         silk(text, x * 0.8, y * 0.8, 0.9, layer=pcbnew.B_SilkS)
     # front arrow (frame +X between two arms after the 45 deg stack rotation)
     silk("^ FRONT", 0, -10.6, 0.9, layer=pcbnew.B_SilkS)
+
+    # grommet keep-outs: nothing but the hole's own pad within 3.7 mm of each
+    # hole centre, on either side, so a rubber grommet seats flat
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        z = pcbnew.ZONE(board)
+        z.SetIsRuleArea(True)
+        z.SetDoNotAllowVias(True)
+        z.SetDoNotAllowTracks(True)
+        z.SetDoNotAllowCopperPour(True)
+        z.SetDoNotAllowPads(False)
+        z.SetDoNotAllowFootprints(False)
+        ls = pcbnew.LSET()
+        ls.AddLayer(pcbnew.F_Cu)
+        ls.AddLayer(pcbnew.B_Cu)
+        z.SetLayerSet(ls)
+        o = z.Outline()
+        o.NewOutline()
+        for k in range(24):
+            a = 2 * math.pi * k / 24
+            o.Append(P(sx * HOLE + 3.75 * math.cos(a), sy * HOLE + 3.75 * math.sin(a)))
+        z.SetZoneName("grommet keep-out")
+        board.Add(z)
 
 
     pcbnew.SaveBoard(OUT, board)

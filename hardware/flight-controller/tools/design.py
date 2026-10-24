@@ -310,7 +310,7 @@ for i, (net, size) in enumerate([("VBAT", "1.5"), ("GND", "1.5"), ("+5V", "1.5")
 
 # Mounting holes, 30.5 mm stack (frame STACK_SPACING), isolated
 for i in range(4):
-    add(f"H{1 + i}", "HOLE", "M3", "MountingHole:MountingHole_3.2mm_M3", {}, "Mechanical")
+    add(f"H{1 + i}", "HOLE", "M3", "showfc:MountingHole_3.3mm_M3_Stack", {}, "Mechanical")
 
 
 # ---------------------------------------------------------------------------

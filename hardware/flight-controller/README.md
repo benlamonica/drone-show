@@ -8,7 +8,14 @@ board, the light/Wi-Fi board, an RC receiver and the ESC. It is a redesign of
 for decoupling right at the MCU and sensors) that PCBWay can build on its
 standard service.
 
-![board](images/board.png)
+| Top | Bottom |
+|---|---|
+| ![top](images/top.png) | ![bottom](images/bottom.png) |
+
+> **Status: not ready to order.** Everything is routed except four
+> connections, which need KiCad's interactive router (see
+> [Finishing the routing](#finishing-the-routing)). The files in `fab/` are
+> from this state; regenerate them after the last four tracks are in.
 
 | | |
 |---|---|
@@ -19,14 +26,13 @@ standard service.
 | Input | 4S-6S through the ESC connector, 60 V-rated buck, 30 V TVS |
 | Rails | 5 V / 3.5 A buck (LMR51635), 3.3 V LDO (LP5912-3.3), 1.8 V sensor LDO (LP5912-1.8), USB diode-OR |
 | Ports | ESC (JST-SH 8), GPS (JST-GH 6, Pixhawk pinout), LIGHT (JST-GH 8), RC (JST-GH 4), SWD (JST-SH 3), USB-C |
-| Board | 50 x 50 mm, corners cut, 30.5 mm M3 stack, 2 layers, 1.6 mm, 1 oz, single-sided assembly |
+| Board | 54 x 54 mm octagon, corners cut at 27 mm, 30.5 mm M3 stack, 2 layers, 1.6 mm, 1 oz, single-sided assembly |
 
 ## Why it looks like this
 
 **2 layers.** The 6-layer original buries power and ground planes. Here both
-outer layers carry signals and a ground pour. Every ground pad gets its own
-via to the bottom pour before routing, ground is left out of the autorouter,
-and the pours on both layers carry it instead. The 0.4 mm-pitch QFN escapes
+outer layers carry signals, and each has a ground pour joined by stitching
+vias. The 0.4 mm-pitch QFN escapes
 on 0.2 mm tracks with 0.15 mm gaps, inside PCBWay's standard 6/6 mil.
 
 **Bigger parts.** 0603 resistors and capacitors everywhere except the 22
@@ -36,8 +42,12 @@ decoupling capacitors and 7 resistors next to the MCU and sensors, which are
 **Size and shape.** The FC sits in the stack on the hub. The frame's arm
 sockets start 27.7 mm from the centre along the arm axes, which is where the
 FC's corners point (it is mounted rotated 45 degrees), so the corners are cut
-at 27 mm. That leaves a 50 x 50 mm octagon with the 30.5 mm hole pattern
-from `frame/frame.py` (`STACK_SPACING`).
+at 27 mm. The flats are 54 mm apart: at 50 mm the MCU could not be routed on
+two layers. The 30.5 mm hole pattern is from `frame/frame.py` (`STACK_SPACING`).
+
+**Stacking.** All the show boards stack on the same 30.5 mm M3 pattern with
+rubber standoffs between them: unplated 3.3 mm holes at ±15.25 mm, each with
+a 7.5 mm copper-free circle (the project spec asks for at least 6.9 mm), and every part is on the top side, so the bottom is flat.
 
 **What changed from OpenFC-Lite.** The analog OSD chain, 10 V VTX rail and
 VTX/camera connectors are gone (a show drone has no video). Added: a second
@@ -67,15 +77,15 @@ low side), TP7/TP8 AUX5/AUX6 (PWM), TP9 GPS PPS in, TP12/TP13 TELEM2 TX/RX.
 |---|---|---|---|
 | 0, 1 | TELEM2 TX/RX (pads, PIO UART) | 24, 25 | Status LEDs blue, green |
 | 2, 3 | RC TX/RX (PIO UART) | 26 | Buzzer FET |
-| 4, 5 | I2C0 SDA/SCL (GPS compass) | 27 | LED data to LIGHT |
+| 4, 5 | I2C0 SDA/SCL (GPS compass) | 27 | Free |
 | 6, 7 | I2C1 SDA/SCL (DPS368) | 28-31 | M1-M4 (DShot, PIO) |
 | 8-11 | SPI1 MISO, CS, SCK, MOSI (microSD) | 32-35 | UART0 TX, RX, CTS, RTS (LIGHT) |
 | 12, 13 | IMU2 CS, INT | 36 | LIGHT GPIO |
-| 14, 15 | IMU1 INT, CLKIN (32 kHz PWM) | 37 | microSD card detect (use the internal pull-up) |
+| 14, 15 | IMU1 INT, CLKIN (32 kHz PWM) | 37 | Free (microSD card detect not connected) |
 | 16-19 | SPI0 MISO, CS1, SCK, MOSI (IMUs) | 38, 39 | AUX5, AUX6 |
 | 20, 21 | UART1 TX/RX (GPS) | 40 (ADC0) | VBAT, 100k/10k divider (scale 11.0) |
 | 22 | GPS PPS | 41 (ADC1) | ESC current, 1k/100n filter |
-| 23 | ESC telemetry RX (PIO UART) | 42-47 | Free (not routed) |
+| 23 | ESC telemetry RX (PIO UART) | 42 | LED data to LIGHT; 43-47 free |
 
 QSPI_SS is the BOOTSEL button (SW1). SW2 is reset (RUN).
 
@@ -90,29 +100,50 @@ QSPI_SS is the BOOTSEL button (SW1). SW2 is reset (RUN).
 | `tools/make_schematic.py` | Writes the schematic and symbol library from `design.py` |
 | `tools/make_footprints.py` | Writes `showfc.pretty` |
 | `tools/make_board.py` | Outline, rules, footprints, nets and placement |
-| `tools/route.py` | Ground fan-out, Freerouting, ground pours, DRC report |
+| `tools/route.py` | Freerouting, ground pours, stitching vias, DRC report |
+| `tools/finish.py` | A second Freerouting pass that keeps the existing wiring |
+| `tools/handroute.py`, `finish_loop.sh` | A small grid router for leftover connections (experimental) |
 | `tools/make_fab.py` | Gerbers, drill, pick-and-place and the PCBWay BOM into `fab/` |
 | `fab/` | What you upload to PCBWay |
 
-The KiCad files are generated. To change the circuit, edit `design.py` and
-re-run; to change placement, edit `make_board.py`:
+The schematic and placement are generated. To change the circuit, edit
+`design.py` and re-run; to change placement, edit `make_board.py`. The routed
+`show-fc.kicad_pcb` is not reproducible (Freerouting gives a different result
+each run), so treat it as the master copy from here on and finish it by hand:
 
 ```sh
 cd hardware/flight-controller/tools
 python3 make_footprints.py
 python3 make_schematic.py
-python3 route.py            # runs make_board.py, then routes (about 15 min)
+python3 route.py --passes 50   # runs make_board.py, then routes (about 40 min)
+python3 finish.py              # optional second pass on the result
 python3 make_fab.py
 ```
 
 The scripts need KiCad's Python (`pcbnew`) and `kicad-cli`, Java 17+ and
 [Freerouting 1.9](https://github.com/freerouting/freerouting/releases/tag/v1.9.0)
-(`FREEROUTING_JAR`). Once the layout is final, hand-tune it in KiCad and stop
-regenerating it.
+(`FREEROUTING_JAR`).
+
+## Finishing the routing
+
+Open `show-fc.kicad_pcb` in KiCad, press **X** (route track) with the
+push-and-shove router, and connect these four. The ratsnest lines show them:
+
+| Net | From | To | Note |
+|---|---|---|---|
+| BUZZER | U1 pin 27 (GPIO26) | R34 pin 1 | buzzer FET gate resistor, bottom left |
+| XOUT | U1 pin 31 | R2 pin 1 | 1 k crystal series resistor, keep it short |
+| USB_DP | U1 pin 67 | R9 pin 2 | 27 R USB series resistor, run it beside USB_DM |
+| VBAT | R16 pin 1 (battery divider) | the VBAT track near C24 | thin is fine, it is only the ADC divider |
+
+If one will not fit, moving the small part (R34, R2, R9 or R16) a millimetre
+usually opens a path. Then refill the zones (B), run DRC and regenerate `fab/`
+with `make_fab.py`. Two short dangling stubs (USB_DP_C near J1, BUCK_CB near
+U3) can be deleted.
 
 ## Ordering at PCBWay
 
-PCB: 2 layers, 50 x 50 mm, FR-4 TG150, 1.6 mm, 1 oz, min track/spacing
+PCB: 2 layers, 54 x 54 mm, FR-4 TG150, 1.6 mm, 1 oz, min track/spacing
 6/6 mil, min hole 0.3 mm, green mask, white silk, HASL lead-free or ENIG
 (ENIG is flatter for the QFN and LGA parts). Assembly: top side only, upload
 `fab/show-fc-revA-bom.csv` and `fab/show-fc-revA-cpl.csv`.

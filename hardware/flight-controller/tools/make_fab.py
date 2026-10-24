@@ -43,8 +43,18 @@ def gerbers():
 
 def placement():
     out = os.path.join(FAB, f"{NAME}-cpl.csv")
-    run("pcb", "export", "pos", "--format", "csv", "--units", "mm", "--side", "front",
-        "--exclude-dnp", "-o", out, PCB)
+    raw = out + ".tmp"
+    run("pcb", "export", "pos", "--format", "csv", "--units", "mm", "--side", "front", "-o", raw, PCB)
+    # PCBWay's column names
+    with open(raw) as f, open(out, "w", newline="") as g:
+        r = csv.DictReader(f)
+        w = csv.writer(g)
+        w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
+        for row in r:
+            if row["Ref"].startswith(("H", "TP")):
+                continue
+            w.writerow([row["Ref"], row["PosX"] + "mm", row["PosY"] + "mm", "Top", row["Rot"]])
+    os.remove(raw)
     return out
 
 
@@ -63,7 +73,8 @@ def bom():
         for i, ((value, fp, mpn, mfr), refs) in enumerate(groups.items(), 1):
             part = next(p for p in design.PARTS if p.ref == refs[0])
             pkg = fp.split(":")[1]
-            w.writerow([i, ",".join(refs), len(refs), mfr, mpn, value, pkg, "SMD", part.lcsc, part.note])
+            w.writerow([i, ",".join(refs), len(refs), mfr, mpn, value, pkg, "SMD", part.lcsc,
+                        part.note if len(refs) == 1 else ""])
     return out
 
 

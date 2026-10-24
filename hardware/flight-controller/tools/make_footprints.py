@@ -119,7 +119,25 @@ def vlga8():
           "DPS368 DPS310 VLGA-8 barometer", body, 2.5, 2.0)
 
 
+def grommet_hole():
+    # project stacking spec: unplated 3.3 mm M3 hole, 30.5 mm pattern, with a
+    # 6.9 mm copper-free ring (the board adds a 3.75 mm radius keep-out)
+    name = "MountingHole_3.3mm_M3_Stack"
+    s = f'(footprint "{name}" (version 20221018) (generator pcbnew)\n  (layer "F.Cu")\n'
+    s += '  (descr "3.3 mm unplated M3 hole for the rubber-standoff stack")\n'
+    s += '  (tags "mounting hole M3 grommet")\n  (attr exclude_from_pos_files exclude_from_bom)\n'
+    s += fp_text("reference", "REF**", 0, -4.5, "F.Fab")
+    s += fp_text("value", name, 0, 4.5, "F.Fab")
+    s += f'  (fp_circle (center 0 0) (end 3.7 0) (stroke (width 0.05) (type solid)) (fill none) (layer "F.CrtYd") (tstamp {_u()}))\n'
+    s += f'  (fp_circle (center 0 0) (end 3.7 0) (stroke (width 0.05) (type solid)) (fill none) (layer "B.CrtYd") (tstamp {_u()}))\n'
+    s += f'  (pad "" np_thru_hole circle (at 0 0) (size 3.3 3.3) (drill 3.3) (layers "*.Cu" "*.Mask") (tstamp {_u()}))\n'
+    s += ")\n"
+    with open(os.path.join(OUT, name + ".kicad_mod"), "w") as f:
+        f.write(s)
+
+
 if __name__ == "__main__":
+    grommet_hole()
     qfn80()
     lga14()
     vlga8()
