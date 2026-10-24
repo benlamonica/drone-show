@@ -1,0 +1,264 @@
+(footprint "WSON-6_L2.0-W2.0-P0.65-TL-EP"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -4.65 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "eb96beaa-f865-4371-b89f-0a7d3268b303")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "WSON-6_L2.0-W2.0-P0.65-TL-EP"
+		(at 0 4.65 180)
+		(layer "F.Fab")
+		(uuid "932418cc-1a69-46fc-b7d4-511c73f1f057")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "32f3c720-b9a9-4bd7-8567-6ab8cab80ea2")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4c9fed72-7942-48ce-a796-d4b97f50bcc4")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "LCSC" "C2848334"
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "88bb4c5d-2710-4f2e-8578-9906cd40f3f7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Farnell" ""
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3ba2b16a-2bc5-41cd-92af-d39b28164066")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Mouser" ""
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b3fc0bc6-8836-45f6-af40-12744860b76c")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Digi-Key" ""
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a7fb2562-39d5-4ad1-a593-7481f6812c15")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Cost" "0.242"
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "780d4a6e-2e44-415d-b44f-0e5cf2a0c662")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Manufacturer" "Texas Instruments"
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b3993a7d-8643-44dd-bc44-31a95f605183")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "MPN" "TLV76733DRVR"
+		(at 0 0 180)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "21eed93f-f551-4bd9-b74a-2455313e849c")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(sheetname "/")
+	(sheetfile "4in1.kicad_sch")
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -1.08 -1.08)
+		(end 1.08 -1.08)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "e93188af-ea71-4653-a8a6-15598d913abd")
+	)
+	(fp_line
+		(start -1.08 1.08)
+		(end 1.08 1.08)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "cc10bcdb-4dff-4583-905c-e4faeeb383c5")
+	)
+	(fp_circle
+		(center -1.63 -0.65)
+		(end -1.56 -0.65)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "224ab1c2-525b-4f3f-ad72-e77063190399")
+	)
+	(fp_circle
+		(center -1.3 -0.65)
+		(end -1.23 -0.65)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(fill no)
+		(layer "Cmts.User")
+		(uuid "ee76ff1c-8c67-4664-a82e-c36a1a6bc766")
+	)
+	(fp_circle
+		(center -1 -1)
+		(end -0.97 -1)
+		(stroke
+			(width 0.06)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "55e4b125-27f9-49ca-91b1-5c3370ef9de6")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(uuid "54827983-7152-4d77-abd5-54862607a316")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd oval
+		(at -1.03 -0.65 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "4913f229-6dc4-4f20-bca2-b54544c8e726")
+	)
+	(pad "2" smd oval
+		(at -1.03 0 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "f0bf1525-3d8c-4547-8848-e731c91ebb0c")
+	)
+	(pad "3" smd oval
+		(at -1.03 0.65 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "c65f8049-c1b8-481b-ae6f-15c2cb664028")
+	)
+	(pad "4" smd oval
+		(at 1.03 0.65 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "dc2278c9-ebfe-4b19-babd-0d5c05c4da04")
+	)
+	(pad "5" smd oval
+		(at 1.03 0 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "411d67be-bcb4-40e9-baf2-49fd74a8697a")
+	)
+	(pad "6" smd oval
+		(at 1.03 -0.65 270)
+		(size 0.36 0.61)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "2c9d660b-49f0-4952-a1a2-67caddc4c9fa")
+	)
+	(pad "7" smd rect
+		(at 0 0)
+		(size 1 1.6)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "817d9a74-3749-40e5-966e-2d748709e12f")
+	)
+	(embedded_fonts no)
+	(model "${KICAD10_3DMODEL_DIR}/Package_SON.3dshapes/WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
