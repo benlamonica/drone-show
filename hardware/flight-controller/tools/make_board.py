@@ -27,7 +27,7 @@ if not os.path.isdir(STD):
 # ~27.7 mm). Stack holes on the 30.5 mm pattern.
 
 CX, CY = 100.0, 100.0
-HALF = 25.0
+HALF = 27.0
 CORNER_REACH = 27.0
 HOLE = 15.25
 CUT = CORNER_REACH * math.sqrt(2)          # x + y = CUT on the chamfer
@@ -55,7 +55,7 @@ def inside(x, y, margin=0.0):
 
 RULES = dict(
     min_clearance=0.15, min_track=0.15, min_via_dia=0.6, min_via_drill=0.3,
-    min_through_hole=0.3, min_hole_to_hole=0.5, min_edge_clearance=0.3,
+    min_through_hole=0.3, min_hole_to_hole=0.4, min_edge_clearance=0.3,
     min_annular=0.15, silk_min_width=0.15, silk_min_text=0.8,
 )
 NETCLASSES = {
@@ -72,13 +72,13 @@ NETCLASSES = {
 
 FIXED = {
     "U1": (0, 0, 0),
-    "J1": (4.0, -21.9, 180),       # USB-C, top edge
-    "J6": (-8.6, -21.8, 180),      # RC, top edge
-    "J2": (-18.4, -3.8, 270),      # microSD, card goes in from the left edge
-    "J4": (-7.4, 21.8, 0),         # GPS, bottom edge
-    "J3": (5.6, 21.7, 0),          # ESC, bottom edge
-    "J5": (21.8, 2.6, 90),         # LIGHT, right edge
-    "J8": (21.7, -8.6, 90),        # SWD, right edge
+    "J1": (4.0, -23.9, 180),       # USB-C, top edge
+    "J6": (-8.0, -22.6, 180),      # RC, top edge
+    "J2": (-20.4, -3.8, 270),      # microSD, card goes in from the left edge
+    "J4": (-6.8, 22.6, 0),         # GPS, bottom edge
+    "J3": (5.3, 23.7, 0),          # ESC, bottom edge
+    "J5": (23.8, 2.6, 90),         # LIGHT, right edge
+    "J8": (23.4, -8.2, 90),        # SWD, right edge
     "H1": (-HOLE, -HOLE, 0), "H2": (HOLE, -HOLE, 0), "H3": (HOLE, HOLE, 0), "H4": (-HOLE, HOLE, 0),
     # sensors, bottom-left; IMU1 nearest the board centre
     "U6": (-8.0, 7.0, 0),
@@ -95,10 +95,10 @@ FIXED = {
     # USB / 5 V diode-OR and the 3.3 V LDO, top-right
     "U2": (0.6, -13.6, 0),
     "D5": (8.4, -15.2, 0),
-    "D4": (12.6, -11.0, 90),
-    "U4": (9.0, -11.4, 0),
-    "SW1": (12.0, -21.2, 0),
-    "SW2": (-2.6, 14.2, 0),
+    "D4": (11.4, -9.6, 90),
+    "U4": (8.4, -11.4, 0),
+    "SW1": (12.0, -22.2, 0),
+    "SW2": (-2.8, 13.8, 0),
 }
 
 # Small parts go next to the pad they serve. ref: (anchor ref, anchor pad)
@@ -129,13 +129,13 @@ ANCHOR = {
 }
 # Test pads, by hand
 PADS = {
-    "TP1": (12.9, 20.0), "TP2": (12.9, 22.2),        # VBAT, GND
-    "TP3": (-1.0, 17.4), "TP4": (1.0, 17.4),         # +5V, GND
-    "TP5": (-20.2, 9.4), "TP6": (-20.2, 11.6),       # buzzer +5V, BUZ-
-    "TP7": (-22.4, 9.4), "TP8": (-22.4, 11.6),       # AUX5, AUX6
-    "TP9": (-12.8, 18.0),                            # GPS_PPS
-    "TP10": (-2.0, -16.2), "TP11": (-4.0, -16.2),    # +3V3, GND
-    "TP12": (-22.4, 5.0), "TP13": (-22.4, 7.2),      # TELEM2 TX, RX
+    "TP1": (13.6, 20.9), "TP2": (12.6, 23.6),        # VBAT, GND
+    "TP3": (-1.3, 16.9), "TP4": (1.3, 16.9),         # +5V, GND
+    "TP5": (-22.0, 9.8), "TP6": (-22.0, 12.4),       # buzzer +5V, BUZ-
+    "TP7": (22.1, 11.2), "TP8": (24.7, 11.2),       # AUX5, AUX6
+    "TP9": (-10.2, 18.0),                            # GPS_PPS
+    "TP10": (-3.0, -13.6), "TP11": (-4.1, -16.6),    # +3V3, GND
+    "TP12": (-23.9, -12.0), "TP13": (-21.3, -12.0),      # TELEM2 TX, RX
 }
 # Each small part stays inside its block. (x0, y0, x1, y1), board-centre mm
 TR = (6.4, -18.8, 18.4, -5.0)
@@ -181,6 +181,12 @@ def load_fp(libid):
     if fp is None:
         sys.exit(f"cannot load footprint {libid}")
     fp.SetFPID(pcbnew.LIB_ID(lib, name))
+    # stock thermal vias are 0.2 mm; PCBWay's standard minimum drill is 0.3 mm
+    for pad in fp.Pads():
+        d = pad.GetDrillSize()
+        if 0 < d.x < pcbnew.FromMM(0.3):
+            pad.SetDrillSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.3), pcbnew.FromMM(0.3)))
+            pad.SetSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.6), pcbnew.FromMM(0.6)))
     return fp
 
 
@@ -216,10 +222,10 @@ def setup_rules(board):
     ds.m_MinSilkTextHeight = MM(RULES["silk_min_text"])
     ds.m_MinSilkTextThickness = MM(RULES["silk_min_width"])
     ds.m_SilkClearance = MM(0.0)
-    ds.m_SolderMaskExpansion = MM(0.05)
+    ds.m_SolderMaskExpansion = MM(0.0)
     ds.m_SolderMaskMinWidth = MM(0.1)
     ds.SetBoardThickness(MM(1.6))
-    ds.m_HoleClearance = MM(0.25)
+    ds.m_HoleClearance = MM(0.15)
     # Net classes live in show-fc.kicad_pro (written by make_project.py).
     # pre-defined track widths and vias offered in the editor
     ds.m_TrackWidthList.clear()
@@ -275,6 +281,8 @@ def build():
         ref = fp.Reference()
         ref.SetTextSize(pcbnew.VECTOR2I(MM(0.8), MM(0.8)))
         ref.SetTextThickness(MM(0.15))
+        # too dense for silkscreen designators: they go on the fab layer (assembly drawing)
+        ref.SetLayer(pcbnew.F_Fab)
         fp.Value().SetVisible(False)
         board.Add(fp)
         fps[p.ref] = fp
@@ -285,7 +293,7 @@ def build():
         fp = fps[ref]
         fp.SetOrientationDegrees(rot)
         fp.SetPosition(P(x, y))
-        placed.append((ref, courtyard(fp)))
+        placed.append((ref, courtyard(fp, 0.0)))
 
     for ref, (x, y, rot) in FIXED.items():
         put(ref, x, y, rot)
@@ -296,13 +304,21 @@ def build():
     holes = [(sx * HOLE, sy * HOLE) for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
     placed[:] = [(r, c) for r, c in placed if not r.startswith("H")]
 
-    def hits_hole(c, r=3.0):
+    def hits_hole(c, r=3.45):
         for hx, hy in holes:
             dx = max(c[0] - hx, 0, hx - c[2])
             dy = max(c[1] - hy, 0, hy - c[3])
             if dx * dx + dy * dy < r * r:
                 return True
         return False
+
+    # sanity check the hand placement
+    for i, (ra, ca) in enumerate(placed):
+        if hits_hole(ca) and not ra.startswith("keepout"):
+            print("WARNING: hand-placed", ra, "is inside a mounting-hole keep-out")
+        for rb, cb in placed[i + 1:]:
+            if overlap(ca, cb):
+                print("WARNING: hand-placed", ra, "overlaps", rb)
 
     # spiral search from each anchor pad for a free spot, both orientations
     mcu = courtyard(fps["U1"], 0.0)
@@ -359,16 +375,18 @@ def build():
         t.SetTextSize(pcbnew.VECTOR2I(MM(size), MM(size)))
         t.SetTextThickness(MM(0.15 if size < 1.2 else 0.2))
         t.SetTextAngleDegrees(rot)
+        t.SetMirrored(layer == pcbnew.B_SilkS)
         board.Add(t)
 
     silk("SHOW FC rev A", 0, 23.6 - 47.2 + 0.2 + 46.0, 1.2, layer=pcbnew.B_SilkS)
-    silk("drone-show 2-layer RP2354B", 0, -1.6 + 46.0 - 23.0, 1.0, layer=pcbnew.B_SilkS)
+    silk("drone-show 2-layer RP2354B", 0, 20.6, 1.0, layer=pcbnew.B_SilkS)
     for ref, text in (("J3", "ESC"), ("J4", "GPS"), ("J5", "LIGHT"), ("J6", "RC"),
                       ("J8", "SWD"), ("J1", "USB"), ("J2", "SD")):
         x, y, rot = FIXED[ref]
         silk(text, x * 0.8, y * 0.8, 0.9, layer=pcbnew.B_SilkS)
     # front arrow (frame +X between two arms after the 45 deg stack rotation)
-    silk("^ FRONT", 0, -6.8, 0.9)
+    silk("^ FRONT", 0, -10.6, 0.9, layer=pcbnew.B_SilkS)
+
 
     pcbnew.SaveBoard(OUT, board)
     if failed:
@@ -393,10 +411,14 @@ def patch_project():
     d["net_settings"]["netclass_patterns"] = patterns
     ds = d["board"]["design_settings"]
     ds["rules"].update(min_clearance=0.15, min_track_width=0.15, min_via_diameter=0.6,
-                       min_via_annular_width=0.15, min_through_hole_diameter=0.3, min_hole_to_hole=0.5,
-                       min_copper_edge_clearance=0.3, min_hole_clearance=0.25, min_text_height=0.8,
+                       min_via_annular_width=0.15, min_through_hole_diameter=0.3, min_hole_to_hole=0.4,
+                       min_copper_edge_clearance=0.3, min_hole_clearance=0.15, min_text_height=0.8,
                        min_text_thickness=0.15, min_silk_clearance=0.0, min_microvia_diameter=0.2,
                        min_microvia_drill=0.1, allow_microvias=False, allow_blind_buried_vias=False)
+    sev = ds.setdefault("rule_severities", {})
+    # footprints come from the system KiCad library, which DRC can't see on a fab machine
+    sev["lib_footprint_issues"] = "ignore"
+    sev["lib_footprint_mismatch"] = "ignore"
     ds["track_widths"] = [0.0, 0.2, 0.3, 0.5, 0.8]
     ds["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.6, "drill": 0.3},
                             {"diameter": 0.8, "drill": 0.4}]

@@ -94,7 +94,7 @@ MCU_PINS = {
     "16": "SPI0_MISO", "17": "IMU1_CS", "18": "SPI0_SCK", "19": "SPI0_MOSI",
     "20": "GPS_TX", "21": "GPS_RX", "22": "GPS_PPS", "23": "ESC_TLM",
     "24": "+3V3",
-    "25": "LED_BLUE", "26": "LED_GREEN", "27": "BUZZER", "28": "LED_DATA",
+    "25": "LED_BLUE", "26": "LED_GREEN", "27": "BUZZER", "28": "NC",
     "29": "+3V3",
     "30": "XIN", "31": "XOUT",
     "32": "+1V1",
@@ -103,10 +103,10 @@ MCU_PINS = {
     "40": "LIGHT_TX",
     "41": "+3V3",
     "42": "LIGHT_RX", "43": "LIGHT_CTS", "44": "LIGHT_RTS", "45": "LIGHT_IO",
-    "46": "SD_DET", "47": "AUX5", "48": "AUX6",
+    "46": "NC", "47": "AUX5", "48": "AUX6",
     "49": "ADC_VBAT",
     "50": "+3V3", "51": "+1V1",
-    "52": "ADC_CURR", "53": "NC", "54": "NC",
+    "52": "ADC_CURR", "53": "LED_DATA", "54": "NC",
     "55": "NC", "56": "NC", "57": "NC", "58": "NC",
     "59": "+3V3",      # ADC_AVDD
     "60": "+3V3",
@@ -207,11 +207,11 @@ add("D4", "D", "PMEG3020EH", "Diode_SMD:D_SOD-123F", {"1": "+4V5", "2": "+5V"}, 
 add("D5", "D", "PMEG3020EH", "Diode_SMD:D_SOD-123F", {"1": "+4V5", "2": "VBUS"}, G,
     "PMEG3020EH,115", "Nexperia", "")
 C("C29", "10u", "+4V5", "GND", G, size="0805")
-add("U4", "LP5912", "LP5912-3.3DRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm",
+add("U4", "LP5912", "LP5912-3.3DRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias",
     {"1": "+3V3", "2": "NC", "3": "NC", "4": "+4V5", "5": "GND", "6": "+4V5", "7": "GND"}, G,
     "LP5912-3.3DRVR", "Texas Instruments", "C524780")
 C("C30", "4.7u", "+3V3", "GND", G)
-add("U5", "LP5912", "LP5912-1.8DRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm",
+add("U5", "LP5912", "LP5912-1.8DRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias",
     {"1": "+1V8_IMU", "2": "NC", "3": "NC", "4": "+4V5", "5": "GND", "6": "+4V5", "7": "GND"}, G,
     "LP5912-1.8DRVR", "Texas Instruments", "C2876234",
     note="clean supply for the IMU and barometer cores")
@@ -261,9 +261,9 @@ R("R25", "2.2k", "+3V3", "I2C1_SCL", G, size="0402")
 G = "Storage"
 add("J2", "MICROSD", "microSD", "Connector_Card:microSD_HC_Molex_104031-0811",
     {"1": "NC", "2": "SD_CS", "3": "SD_MOSI", "4": "+3V3", "5": "SD_SCK", "6": "GND",
-     "7": "SD_MISO", "8": "NC", "9": "SD_DET", "10": "GND", "11": "GND"}, G,
+     "7": "SD_MISO", "8": "NC", "9": "NC", "10": "GND", "11": "GND"}, G,
     "1040310811", "Molex", "")
-# DAT1 and DAT2 are unused in SPI mode. SD_DET uses the RP2354 internal pull-up.
+# DAT1 and DAT2 are unused in SPI mode. Card detect is left unconnected: on a 2-layer board it has no clear path to the MCU, and the flight software does not need it.
 R("R26", "10k", "+3V3", "SD_CS", G)
 R("R27", "10k", "+3V3", "SD_MISO", G)
 C("C43", "10u", "+3V3", "GND", G, size="0805")
@@ -302,7 +302,7 @@ R("R35", "100k", "BUZZER_G", "GND", G)
 add("D7", "D", "1N4148WS", "Diode_SMD:D_SOD-323", {"1": "+5V", "2": "BUZ-"}, G,
     "1N4148WS", "onsemi", "")
 # Solder pads
-for i, (net, size) in enumerate([("VBAT", "2.0"), ("GND", "2.0"), ("+5V", "1.5"), ("GND", "1.5"),
+for i, (net, size) in enumerate([("VBAT", "1.5"), ("GND", "1.5"), ("+5V", "1.5"), ("GND", "1.5"),
                                  ("+5V", "1.5"), ("BUZ-", "1.5"), ("AUX5", "1.5"), ("AUX6", "1.5"),
                                  ("GPS_PPS", "1.5"), ("+3V3", "1.5"), ("GND", "1.5"),
                                  ("TEL2_TX", "1.5"), ("TEL2_RX", "1.5")]):

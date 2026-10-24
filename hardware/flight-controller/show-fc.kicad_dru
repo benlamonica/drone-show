@@ -1,0 +1,49 @@
+(version 1)
+
+# Show FC design rules: PCBWay standard 2-layer PCB, 1.6 mm FR-4, 1 oz copper,
+# HASL or ENIG, green mask. These are the numbers PCBWay quotes for its normal
+# price tier (no "advanced" surcharge). The board-wide minimums are also set in
+# Board Setup (show-fc.kicad_pro); these rules restate them by name so a DRC
+# violation says which fab limit it breaks.
+
+(rule "PCBWay min track 6 mil"
+  (constraint track_width (min 0.15mm)))
+
+(rule "PCBWay min spacing 6 mil"
+  (condition "A.Type != 'Zone' && B.Type != 'Zone'")
+  (constraint clearance (min 0.15mm)))
+
+(rule "PCBWay min drill 0.3 mm"
+  (constraint hole_size (min 0.3mm)))
+
+(rule "PCBWay min via pad 0.6 mm"
+  (condition "A.Type == 'Via'")
+  (constraint via_diameter (min 0.6mm)))
+
+(rule "PCBWay min annular ring 0.15 mm"
+  (condition "A.Type == 'Via'")
+  (constraint annular_width (min 0.15mm)))
+
+(rule "PCBWay copper to board edge 0.3 mm"
+  (constraint edge_clearance (min 0.3mm)))
+
+(rule "PCBWay drill to drill 0.4 mm"
+  (constraint hole_to_hole (min 0.4mm)))
+
+(rule "PCBWay silkscreen line 0.15 mm, text 0.8 mm"
+  (condition "A.Layer == 'F.SilkS' || A.Layer == 'B.SilkS'")
+  (constraint text_height (min 0.8mm))
+  (constraint text_thickness (min 0.15mm)))
+
+# Board-specific rules -------------------------------------------------------
+
+# Ground pours keep a wider gap than tracks so they never neck between fine
+# pitch pads.
+(rule "Ground pour clearance"
+  (condition "A.Type == 'Zone' || B.Type == 'Zone'")
+  (constraint clearance (min 0.25mm)))
+
+# Battery, 5 V and the buck switch node carry up to 3 A.
+(rule "Supply nets 0.4 mm minimum"
+  (condition "A.NetClass == 'Supply'")
+  (constraint track_width (min 0.4mm)))
