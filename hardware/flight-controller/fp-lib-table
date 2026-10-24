@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "showfc")(type "KiCad")(uri "${KIPRJMOD}/showfc.pretty")(options "")(descr "Show FC project footprints, generated"))
+)
