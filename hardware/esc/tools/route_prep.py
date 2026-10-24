@@ -1,19 +1,17 @@
 """Prepare the placed board for Freerouting. Run with KiCad's Python.
 
     python3 tools/route_prep.py signals build/placed.kicad_pcb build/fanned.kicad_pcb build/route.dsn
-    python3 tools/route_prep.py phase build/fanned.kicad_pcb build/route.ses build/route_phase.dsn
+    python3 tools/route_prep.py resume build/routed.kicad_pcb build/route2.dsn
 
-GND and +BATT are not routed as tracks: they are the bottom and top pours.
-Every top-side GND pad and bottom-side +BATT pad gets a short stub to its own
-via here, so the pour on the other layer picks it up. The board-wide pours
-are left out of the DSN (Freerouting would treat them as solid obstacles).
+GND and +BATT are not routed as tracks: they are the inner planes plus the
+bottom and top pours. Every GND and +BATT pad gets a short stub to its own via
+here, so the plane picks it up. The board-wide
+pours are left out of the DSN (Freerouting would treat them as solid
+obstacles).
 
-Routing is two passes. Pass 1 routes every signal with the phase strips
-turned into keepouts, so no signal track cuts the motor current path. Pass 2
-keeps pass 1's tracks fixed and routes only the phase nets' small-signal pins
-(gate driver, bootstrap caps, BEMF dividers) out to their strips. Track
-keepouts on top also keep signals out of the +BATT path from the centre to
-each channel's high-side FETs.
+The phase strips go into the DSN as protected copper, so signal tracks route
+round them and the phase nets' small-signal pins (gate driver, bootstrap
+caps, BEMF dividers) route to them.
 """
 import math
 import os
@@ -26,7 +24,9 @@ import layout as L  # noqa: E402
 
 MM = pcbnew.FromMM
 CX, CY = 150.0, 100.0
-VIA, DRILL = 0.6, 0.3
+VIA, DRILL = 0.66, 0.3
+# exposed pad number of each part that has one
+EXPOSED_PADS = {"AT32F421G8U7": "29", "NSG2065Q": "25", "TLV76733DRVR": "7"}
 GAP = 0.3
 
 
@@ -65,7 +65,7 @@ class Obstacles:
         if abs(x) > L.HALF - 0.8 or abs(y) > L.HALF - 0.8 or abs(x) + abs(y) > lim:
             return False
         for hx, hy in L.holes():
-            if math.hypot(x - hx, y - hy) < L.HOLE_PAD / 2 + 0.5 + r:
+            if math.hypot(x - hx, y - hy) < L.HOLE_COPPER_FREE / 2 + 0.2 + r:
                 return False
         for x0, y0, x1, y1, n, _, is_via in self.items:
             # same-net pads are fine to touch; same-net vias still need the
@@ -85,6 +85,8 @@ class Obstacles:
                 continue
             for i in range(n + 1):
                 x, y = ax + (bx - ax) * i / n, ay + (by - ay) * i / n
+                if own[0] <= x <= own[2] and own[1] <= y <= own[3]:
+                    continue    # still on the pad itself, which is already there
                 if x + r + GAP > x0 and x - r - GAP < x1 and y + r + GAP > y0 and y - r - GAP < y1:
                     return False
         return True
@@ -131,34 +133,58 @@ def fanout(board):
     placed_vias = [t for t in board.GetTracks() if t.GetClass() == "PCB_VIA"]
     for fp in board.GetFootprints():
         bottom = fp.IsFlipped()
-        for p in fp.Pads():
+        ep_num = EXPOSED_PADS.get(fp.GetValue())
+        ep_via = False
+        # exposed pad first: if it gets no via, its ground pins fan out too
+        for p in sorted(fp.Pads(), key=lambda q: q.GetNumber() != ep_num):
             if p.GetDrillSize().x > 0:
                 continue
             net = p.GetNetname()
-            if not ((net == "GND" and not bottom) or (net == "+BATT" and bottom)):
-                continue
             px, py = xy(p.GetPosition())
-            if fp.GetValue() == "AT32F421G8U7" and p.GetNumber() == "29":
-                # exposed pad: one via straight down in the middle of it
+            if L.LAYERS == 2:
+                # pads sitting in their own net's outer pour reach the other
+                # layer through that pour's vias; only the ones in the other
+                # net's pour need their own
+                if not ((net == "GND" and not bottom) or (net == "+BATT" and bottom)):
+                    continue
+            else:
+                # the outer pours get cut up by the routing, so every GND and
+                # +BATT pad gets its own via to the inner planes, except the
+                # FETs (big pads in the pours, low-side sources on their tabs)
+                if net not in ("GND", "+BATT") or fp.GetValue() == "SP40N01GHNK":
+                    continue
+            if p.GetNumber() == ep_num:
+                # exposed pad: one via in it, the middle if nothing on the
+                # other side is in the way, else nudged towards an edge
+                hw = max(0.0, pcbnew.ToMM(p.GetBoundingBox().GetWidth()) / 2 - 0.3)
+                hh = max(0.0, pcbnew.ToMM(p.GetBoundingBox().GetHeight()) / 2 - 0.3)
+                spots = [(px + dx, py + dy) for dx in (0, -hw, hw) for dy in (0, -hh, hh)]
+                spot = next(((x, y) for x, y in spots if obs.via_ok(x, y, p.GetNetCode())), None)
+                if spot is None:
+                    failed.append(f"{fp.GetReference()}.{p.GetNumber()}")
+                    continue
                 via = pcbnew.PCB_VIA(board)
-                via.SetPosition(p.GetPosition())
+                via.SetPosition(v(*spot))
                 via.SetWidth(MM(VIA))
                 via.SetDrill(MM(DRILL))
                 via.SetNet(p.GetNet())
                 board.Add(via)
-                obs.add_via(px, py, p.GetNetCode())
+                obs.add_via(*spot, p.GetNetCode())
+                ep_via = True
                 done += 1
                 continue
-            if fp.GetValue() == "AT32F421G8U7":
-                # MCU ground pins: short track inward to the exposed pad
-                ep = next(q for q in fp.Pads() if q.GetNumber() == "29")
+            ep = next((q for q in fp.Pads() if q.GetNumber() == ep_num), None)
+            if ep is not None and ep.GetNetCode() == p.GetNetCode():
+                # ground pins of a part with a ground exposed pad: short track
+                # inward to the exposed pad
                 b = p.GetBoundingBox()
                 if b.GetWidth() > b.GetHeight():     # pin on a left/right side
                     end = pcbnew.VECTOR2I(ep.GetPosition().x, p.GetPosition().y)
                 else:
                     end = pcbnew.VECTOR2I(p.GetPosition().x, ep.GetPosition().y)
                 add_track(board, p, end, bottom, 0.2)
-                continue
+                if ep_via:
+                    continue
             # skip pads that already have a via of their net close by
             near = [t for t in placed_vias if t.GetNetCode() == p.GetNetCode()
                     and math.hypot(*(a - b for a, b in zip(xy(t.GetPosition()), (px, py)))) < 1.6]
@@ -195,8 +221,8 @@ def fanout(board):
                         continue
                     if not obs.track_ok(px, py, x, y, p.GetNetCode(), width, layer, own):
                         continue
-                    z = zone_at(board, other, x, y)
-                    if z is None or z.GetNetname() != net:
+                    z = zone_at(board, other, x, y) if L.LAYERS == 2 else None
+                    if L.LAYERS == 2 and (z is None or z.GetNetname() != net):
                         continue
                     via = pcbnew.PCB_VIA(board)
                     via.SetPosition(v(x, y))
@@ -212,6 +238,20 @@ def fanout(board):
                     break
                 if placed:
                     break
+            if not placed:
+                # no room for a via of its own: share the nearest one of its
+                # net that a clear stub can reach
+                vias = sorted((math.hypot(vx - px, vy - py), vx, vy) for vx, vy, vn in
+                              (((a + c) / 2, (b + d) / 2, n) for a, b, c, d, n, _, iv in obs.items if iv)
+                              if vn == p.GetNetCode())
+                for d, vx, vy in vias:
+                    if d > 2.5:
+                        break
+                    if obs.track_ok(px, py, vx, vy, p.GetNetCode(), width, layer, own):
+                        add_track(board, p, v(vx, vy), bottom, width)
+                        obs.add_track(px, py, vx, vy, p.GetNetCode(), width, layer)
+                        placed = True
+                        break
             if not placed:
                 failed.append(f"{fp.GetReference()}.{p.GetNumber()}")
     print(f"fanout: {done} vias, failed: {failed}")
@@ -238,49 +278,92 @@ def add_keepout(board, outline, layer, name, vias=False):
     board.Add(z)
 
 
+def power_layers(dsn):
+    """In1 is a solid GND plane: tell Freerouting it is a power layer, so it
+    routes nothing there. In2 is a +BATT pour that signals may cross, so it
+    stays a signal layer and its pour is left out like the outer ones."""
+    t = open(dsn).read()
+    for name in ("In1.Cu",):
+        t = t.replace(f"(layer {name}\n      (type signal)", f"(layer {name}\n      (type power)")
+    open(dsn, "w").write(t)
+
+
 def strip_pours(board):
     """Drop the board-wide pours and the MCU GND islands: Freerouting would
     treat them as solid copper."""
-    for z in list(board.Zones()):
+    for z in [board.GetArea(i) for i in range(board.GetAreaCount())]:
         if z.GetIsRuleArea():
             continue
         name = z.GetZoneName()
-        if name in ("BATT top", "GND bottom") or name.startswith("MCU GND"):
+        if name in ("BATT top", "GND bottom", "BATT plane") or name.startswith("MCU GND"):
             board.Remove(z)
 
 
 def signals(src, fanned, dsn):
-    """Pass 1: every signal except the phase nets. Freerouting doesn't treat
-    another net's plane as an obstacle, so the phase strips become keepouts
-    here; that keeps signal tracks from cutting the motor current path."""
+    """Fan out, then write the DSN for every net except GND and +BATT."""
     board = pcbnew.LoadBoard(src)
     fanout(board)
     board.Save(fanned)
+    write_dsn(board, dsn)
+
+
+def resume(routed, dsn):
+    """DSN of a routed board, so another Freerouting run can carry on from
+    where the last one stopped instead of starting again."""
+    write_dsn(pcbnew.LoadBoard(routed), dsn)
+
+
+def write_dsn(board, dsn):
     # +BATT highways on top, centre to each channel's high-side drains
-    for k in range(4):
+    for k in range(4 if L.LAYERS == 2 else 0):
         pts = [L.rot(x, y, k) for x, y in
                ((7.5, -9.0), (L.FET_X - 1.0, -9.0), (L.FET_X - 1.0, 9.0), (7.5, 9.0))]
         add_keepout(board, pts, pcbnew.F_Cu, f"BATT highway {k}")
+    # the low-side source tabs are GND, which the router skips entirely, so
+    # its copper would be invisible to it: keep the router out instead
+    for z in [z for z in board.Zones() if z.GetZoneName().endswith(" source")]:
+        add_keepout(board, z.Outline().COutline(0), z.GetLayer(), "keepout " + z.GetZoneName(), vias=True)
+        board.Remove(z)
     strip_pours(board)
-    for z in list(board.Zones()):
-        if not z.GetIsRuleArea() and "/Motor" in z.GetNetname():
-            add_keepout(board, z.Outline().COutline(0), z.GetLayer(), "phase " + z.GetZoneName(), vias=True)
-            board.Remove(z)
     print("dsn", dsn, pcbnew.ExportSpecctraDSN(board, dsn))
+    power_layers(dsn)
+    phase_wires(dsn)
 
 
-def phase(fanned, ses, dsn):
-    """Pass 2: the phase nets' small-signal pins (driver, bootstrap, BEMF
-    divider) out to their strips. Pass 1's tracks go in as protected wiring."""
-    board = pcbnew.LoadBoard(fanned)
-    if not pcbnew.ImportSpecctraSES(board, ses):
-        raise SystemExit("SES import failed")
-    strip_pours(board)
-    pcbnew.ExportSpecctraDSN(board, dsn)
-    t = open(dsn).read().replace("(type route)", "(type protect)")
+def phase_wires(dsn):
+    """KiCad exports the remaining zones (phase strips, the battery + pad) as
+    Specctra planes, which Freerouting lets other nets
+    run straight through. Only the In1 GND plane stays a plane. As protected polygon wiring they are
+    solid copper to every other net and still a place for their own net's
+    driver, bootstrap and BEMF pins to connect to."""
+    t = open(dsn).read()
+    wires = []
+    out, i = [], 0
+    while True:
+        j = t.find("(plane ", i)
+        if j < 0:
+            out.append(t[i:])
+            break
+        depth, k = 0, j
+        while True:
+            depth += {"(": 1, ")": -1}.get(t[k], 0)
+            k += 1
+            if depth == 0:
+                break
+        block = t[j:k]
+        net = block.split()[1]
+        out.append(t[i:j])
+        if "(polygon In1.Cu" not in block:
+            poly = block[block.index("(polygon"):-1]
+            wires.append(f"    (wire {poly} (net {net})(type protect))\n")
+        else:
+            out.append(block)
+        i = k
+    t = "".join(out)
+    t = t.replace("  (wiring\n", "  (wiring\n" + "".join(wires), 1)
     open(dsn, "w").write(t)
-    print("dsn", dsn)
+
 
 
 if __name__ == "__main__":
-    {"signals": signals, "phase": phase}[sys.argv[1]](*sys.argv[2:])
+    {"signals": signals, "resume": resume}[sys.argv[1]](*sys.argv[2:])

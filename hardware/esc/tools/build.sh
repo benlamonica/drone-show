@@ -6,6 +6,8 @@
 #   FREEROUTING=/path/to/freerouting-1.9.0.jar sh tools/build.sh
 #
 # On a headless Linux box run it under xvfb-run (freerouting 1.9 opens a window).
+# Routing takes up to an hour. GND and +BATT go through the inner planes, so
+# the router skips the Power class.
 # Steps: netlist -> footprints -> placement -> fanout + DSN -> autoroute ->
 # import + pour fill -> drone-esc.kicad_pcb. tools/export.sh then makes the
 # fab files.
@@ -23,9 +25,7 @@ for b in placed fanned; do
   cp drone-esc.kicad_dru build/$b.kicad_dru
 done
 python3 tools/route_prep.py signals build/placed.kicad_pcb build/fanned.kicad_pcb build/route.dsn
-(cd build && java -jar "$FREEROUTING" -de route.dsn -do route.ses -mp 30 -mt 0 -inc Power,Phase)
-python3 tools/route_prep.py phase build/fanned.kicad_pcb build/route.ses build/route_phase.dsn
-(cd build && java -jar "$FREEROUTING" -de route_phase.dsn -do route_phase.ses -mp 20 -mt 0 -inc Power,kicad_default,Gate,Supply)
-python3 tools/finish_pcb.py build/fanned.kicad_pcb build/route_phase.ses drone-esc.kicad_pcb
+(cd build && java -jar "$FREEROUTING" -de route.dsn -do route.ses -mp 40 -mt 0 -inc Power)
+python3 tools/finish_pcb.py build/fanned.kicad_pcb build/route.ses drone-esc.kicad_pcb
 kicad-cli pcb drc --schematic-parity --severity-error -o build/drc.rpt drone-esc.kicad_pcb || true
 echo "board written to drone-esc.kicad_pcb, DRC report in build/drc.rpt"

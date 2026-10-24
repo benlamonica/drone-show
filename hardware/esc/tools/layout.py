@@ -5,8 +5,11 @@ y down). The board is drawn with the FC connector edge (front) up.
 
 The board is an octagon, 74 mm across the flats: four 24.6 mm axis flats at
 +-37 mm and four corner flats 35 mm from the centre. The corners point at the
-arms. It needs a bigger hub than frame/frame.py has today: BODY 90 -> 104 mm
-and GPS_MAST_R 38 -> 50 mm (see README.md).
+arms. It needs a slightly bigger hub than frame/frame.py has today (see
+README.md).
+
+Four copper layers: signals and the phase copper on the outside, a solid GND
+plane on In1 and a +BATT pour on In2 that signals may also use.
 
 Each motor channel owns one edge. Its three half-bridges sit in a row along
 that edge: high-side FET on top, low-side FET directly underneath on the
@@ -21,10 +24,11 @@ S2 = math.sqrt(2.0)
 HALF = 37.0           # axis flats
 CHAMFER = 35.0        # corner flats, distance from the centre
 EDGE_MARGIN = 0.4     # parts to board edge
+LAYERS = 4
 
 HOLE_PITCH = 30.5     # stack standard
-HOLE_D = 4.0          # 4 mm like the prototype, takes M3 soft-mount grommets
-HOLE_PAD = 4.6
+HOLE_D = 3.3          # M3 clearance, unplated: the stack sits on rubber standoffs
+HOLE_COPPER_FREE = 6.9   # diameter kept clear of copper on every layer (same as the FC)
 HOLE_PART_KEEPOUT = 3.7   # grommet / standoff flange radius, no parts inside
 
 # channel -> number of 90 degree clockwise turns from the right-hand (E) edge.

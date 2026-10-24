@@ -1,9 +1,9 @@
-"""Write PCBWay 2-layer design rules and net classes into drone-esc.kicad_pro.
+"""Write PCBWay 4-layer design rules and net classes into drone-esc.kicad_pro.
 
-PCBWay standard 2-layer, 2 oz finished copper (their published capabilities,
+PCBWay standard 4-layer, 2 oz outer / 1 oz inner copper (their published capabilities,
 checked 2026-10):
-  * track / space: 8 / 8 mil (0.2 mm) at 2 oz (6/6 mil is 1 oz only)
-  * min drill 0.3 mm, min annular ring 0.15 mm -> via 0.6 / 0.3 mm
+  * track / space: 7 / 8 mil (0.178 / 0.2 mm) at 2 oz outer
+  * via annular ring 7 mil at 2 oz -> via 0.66 / 0.3 mm (0.8 / 0.4 for power)
   * hole to hole 0.5 mm, copper to board edge 0.3 mm
   * silkscreen line 0.15 mm, text height 0.8 mm
 Custom rules on top of these are in drone-esc.kicad_dru.
@@ -26,14 +26,14 @@ d["text_variables"] = {
 rules = d["board"]["design_settings"]["rules"]
 rules.update({
     "min_clearance": 0.2,
-    "min_connection": 0.2,
-    "min_track_width": 0.2,
+    "min_connection": 0.175,
+    "min_track_width": 0.175,
     "min_copper_edge_clearance": 0.3,
     "min_hole_clearance": 0.25,
     "min_hole_to_hole": 0.5,
     "min_through_hole_diameter": 0.3,
-    "min_via_diameter": 0.6,
-    "min_via_annular_width": 0.15,
+    "min_via_diameter": 0.65,
+    "min_via_annular_width": 0.175,
     "min_microvia_diameter": 0.6,
     "min_microvia_drill": 0.3,
     "min_text_height": 0.8,
@@ -56,10 +56,10 @@ def cls(name, clearance, track, via, drill, prio):
 
 
 d["net_settings"]["classes"] = [
-    cls("Default", 0.2, 0.2, 0.6, 0.3, 2147483647),
+    cls("Default", 0.2, 0.2, 0.66, 0.3, 2147483647),
     cls("Power", 0.2, 1.0, 0.8, 0.4, 0),
-    cls("Gate", 0.2, 0.25, 0.6, 0.3, 1),
-    cls("Supply", 0.2, 0.3, 0.6, 0.3, 2),
+    cls("Gate", 0.2, 0.25, 0.66, 0.3, 1),
+    cls("Supply", 0.2, 0.3, 0.66, 0.3, 2),
     cls("Phase", 0.2, 0.3, 0.8, 0.4, 3),
 ]
 d["net_settings"]["netclass_patterns"] = [
@@ -74,7 +74,7 @@ d["net_settings"]["netclass_patterns"] = [
 ]
 # track and via presets for interactive routing
 ds["track_widths"] = [0.0, 0.2, 0.25, 0.3, 0.4, 0.6, 1.0, 2.0]
-ds["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.6, "drill": 0.3},
+ds["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.66, "drill": 0.3},
                         {"diameter": 0.8, "drill": 0.4}]
 json.dump(d, open(path, "w"), indent=2)
 print("updated", path)

@@ -9,6 +9,7 @@
   in one footprint, matching the pin numbers of the prototype's 4in1ESC symbol.
   Its geometry comes from layout.py so the board script and the footprint agree.
 """
+import math
 import os
 import sys
 
@@ -106,9 +107,28 @@ def esc_pads():
     # FC wire pads, top side next to the connector, same order as the JST: +BATT GND CURR TX M1 M2 M3 M4
     for num, (x, y) in L.wire_pads().items():
         add_pad(fp, num, x, y, L.WIRE_PAD_W, L.WIRE_PAD_H)
-    # mounting holes, plated, tied to GND like the prototype
+    # mounting holes: unplated M3 holes with a copper-free ring, matching the
+    # FC so the boards stack on rubber standoffs
     for x, y in L.holes():
-        add_pad(fp, "11", x, y, L.HOLE_PAD, L.HOLE_PAD, drill=L.HOLE_D, shape=pcbnew.PAD_SHAPE_CIRCLE)
+        p = add_pad(fp, "", x, y, L.HOLE_D, L.HOLE_D, drill=L.HOLE_D, shape=pcbnew.PAD_SHAPE_CIRCLE)
+        p.SetAttribute(pcbnew.PAD_ATTRIB_NPTH)
+        p.SetLayerSet(pcbnew.PAD.UnplatedHoleMask())
+        z = pcbnew.ZONE(fp)
+        z.SetIsRuleArea(True)
+        z.SetLayerSet(pcbnew.LSET.AllCuMask())
+        z.SetDoNotAllowTracks(True)
+        z.SetDoNotAllowVias(True)
+        z.SetDoNotAllowPads(False)   # the hole itself is a pad
+        z.SetDoNotAllowZoneFills(True)
+        z.SetDoNotAllowFootprints(False)
+        o = z.Outline()
+        o.NewOutline()
+        for i in range(32):
+            a = 2 * math.pi * i / 32
+            # polygon circumscribing the 6.9 mm circle
+            rr = L.HOLE_COPPER_FREE / 2 / math.cos(math.pi / 32)
+            o.Append(MM(x + rr * math.cos(a)), MM(y + rr * math.sin(a)))
+        fp.Add(z)
     # motor pads, plated through so the wire's current reaches both layers
     for num, (x, y, ang) in L.motor_pads().items():
         add_pad(fp, num, x, y, L.MOTOR_PAD_W, L.MOTOR_PAD_H, drill=L.MOTOR_PAD_DRILL, angle=ang)

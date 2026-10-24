@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf fab && mkdir -p fab/gerber
 kicad-cli pcb export gerbers --no-protel-ext --subtract-soldermask \
-  -l F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts \
+  -l F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts \
   -o fab/gerber/ drone-esc.kicad_pcb
 kicad-cli pcb export drill --format excellon --excellon-separate-th \
   --generate-map --map-format gerberx2 -o fab/gerber/ drone-esc.kicad_pcb

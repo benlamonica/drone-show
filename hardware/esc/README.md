@@ -1,11 +1,11 @@
-# drone-esc: 2-layer 4-in-1 ESC for the show drones
+# drone-esc: 4-layer 4-in-1 ESC for the show drones
 
-A 2-layer re-layout of [OpenESC-30x30](https://github.com/benlamonica/OpenESC-30x30)
-for PCBWay's cheapest process. The circuit is the prototype's (four AT32F421
+A 4-layer re-layout of [OpenESC-30x30](https://github.com/benlamonica/OpenESC-30x30)
+for PCBWay's standard process. The circuit is the prototype's (four AT32F421
 MCUs running AM32, four NSG2065Q gate drivers, 24 SP40N01GHNK FETs, INA186
 current sense, LMR54406 10 V buck, TLV767 3.3 V LDO). What changed is the
-board: 2 layers instead of 6, every passive 0603 or bigger, and a 74 mm
-octagon instead of a 30.5 mm-pattern square.
+board: 4 layers instead of 6, every passive 0603 or bigger, and a 74 mm
+octagon instead of a 30 x 30 mm square.
 
 ## Ratings
 
@@ -15,17 +15,22 @@ octagon instead of a 30.5 mm-pattern square.
 | Current | about 35 A continuous per motor with airflow, limited by 2 oz copper and the FET package. Show flying (hover plus gentle moves) needs a fraction of that. |
 | Firmware | AM32 for AT32F421, same pinout as OpenESC-30x30, flashed over the signal pads. |
 | FC link | JST-SH 8-pin (Betaflight 4-in-1 order: VBAT, GND, CURR, TLM, M1 to M4) plus solder pads beside it. |
-| Mounting | 30.5 mm hole pattern, 4 mm plated holes for M3 grommets, so it stacks under a standard FC. |
+| Mounting | 30.5 mm M3 pattern, 3.3 mm unplated holes with a 6.9 mm copper-free ring, so it stacks with the FC on rubber standoffs. |
 
 ## Board
 
-* 74 mm across the flats, octagonal, 1.6 mm FR4, 2 layers, 2 oz copper both sides.
-  A first pass at 66 mm would not route on two layers (the gate-drive lines
-  had no room between each driver and its FETs), so it grew by 8 mm.
+* 74 mm across the flats, octagonal, 1.6 mm FR4, 4 layers: 2 oz outer,
+  1 oz inner. Layer 2 is a solid GND plane; layer 3 is a +BATT pour that a
+  few signal tracks also cross.
+* Two layers were tried first and did not work: at 66 mm the gate-drive lines
+  had no room, and at 74 mm the routing cut the GND pour into islands, which
+  is no good on a board switching 100+ A. The inner planes fix both and give a
+  much shorter commutation loop.
 * Each motor owns one edge. The high-side FET of each half-bridge is on top,
   its low-side FET directly underneath on the bottom, and the phase copper runs
   out to plated motor pads on the edge.
-* The top layer is mostly +BATT pour, the bottom mostly GND pour. Battery
+* The outer layers are +BATT pour on top and GND pour on the bottom, stitched
+  to the inner planes. Battery
   leads (14 AWG) come up through the hub floor and solder into two plated holes
   in the middle of the board, so current spreads to all four edges evenly.
 * 24 x 10 uF 1206 ceramics sit around the power path; add a 35 V low-ESR
@@ -51,11 +56,11 @@ Upload `fab/drone-esc-gerbers.zip` and choose:
 
 | Option | Value |
 |---|---|
-| Layers | 2 |
+| Layers | 4 |
 | Material / thickness | FR-4 TG150, 1.6 mm |
-| Copper | 2 oz outer |
-| Min track / space | 8 / 8 mil (0.2 mm) |
-| Min hole | 0.3 mm |
+| Copper | 2 oz outer, 1 oz inner |
+| Min track / space | 7 / 8 mil (0.178 / 0.2 mm) |
+| Min hole / via | 0.3 mm drill, 0.66 mm via pad (7 mil ring) |
 | Surface finish | ENIG (flat pads for the QFNs) or lead-free HASL |
 | Solder mask / silk | any colour |
 
@@ -87,9 +92,11 @@ The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
   batch; a hand touch-up there is worthwhile.
 * RS2205-class motors are usually wound for 4S. On 6S pick a lower KV
   (about 1700 to 1900 KV) or limit throttle in the FC.
-* A 2-layer board has a longer commutation loop than the 6-layer original, so
-  expect more ringing on the phase nodes. The 40 V FETs give enough headroom
-  at 6S, but keep the electrolytic close to the battery pads.
+* The FETs and gate drivers sit on both sides, so the board can't be all
+  parts-on-top like the FC. Bottom parts stand about 1.2 mm proud; the rubber
+  standoffs between stacked boards need to be taller than that.
+* Four layers is a bit more per board than two at PCBWay, but still far below
+  the prototype's six.
 
 ## Rebuilding
 

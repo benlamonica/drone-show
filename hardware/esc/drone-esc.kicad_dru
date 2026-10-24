@@ -1,7 +1,7 @@
 (version 1)
 
-# Custom rules for the drone-show 2-layer ESC. The PCBWay fab minimums
-# (0.2 mm track/space at 2 oz, 0.6/0.3 mm via, 0.3 mm to the edge) live in
+# Custom rules for the drone-show 4-layer ESC. The PCBWay fab minimums
+# (0.178/0.2 mm track/space at 2 oz, 0.66/0.3 mm via, 0.3 mm to the edge) live in
 # drone-esc.kicad_pro, written by tools/project_settings.py.
 
 (rule "silkscreen off pads"
@@ -17,9 +17,3 @@
 (rule "QFN escape"
   (constraint clearance (min 0.2mm))
   (condition "A.Type == 'Pad' && A.Parent.Value == 'AT32F421G8U7'"))
-
-# Mounting holes take metal standoffs or grommets: no other copper within
-# 0.5 mm of the plated ring.
-(rule "mounting hole ring"
-  (constraint clearance (min 0.5mm))
-  (condition "A.Type == 'Pad' && A.Pad_Number == '11' && A.Parent.Reference == 'U3' && A.Net != B.Net"))

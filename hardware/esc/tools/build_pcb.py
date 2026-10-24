@@ -227,7 +227,11 @@ class Floor:
 
 # --------------------------------------------------------------- board
 def setup_board(board):
-    board.SetCopperLayerCount(2)
+    board.SetCopperLayerCount(L.LAYERS)
+    if L.LAYERS == 4:
+        # plane layers. They stay "signal" in KiCad so the DSN export
+        # includes them; route_prep marks them as power layers for the router.
+        pass
     ds = board.GetDesignSettings()
     ds.SetBoardThickness(MM(1.6))
     pts = L.outline()
@@ -361,6 +365,7 @@ def build(netlist_path, out_path):
 
     # ---- power stage, fixed positions, all four channels
     cap_x = L.FET_X - 3.37 - 0.3 - 2.05
+    source_tabs = []
     for ch, k in L.CHANNELS.items():
         r = roles[ch]
         caps = bulk[6 * k: 6 * k + 6]
@@ -378,12 +383,26 @@ def build(netlist_path, out_path):
         # GND vias beside the bulk caps, phase stitching, gate resistors
         for i, ph in enumerate("ABC"):
             y = L.PHASE_Y[ph]
-            for dy in (-1.15, 1.15):
-                gx, gy = L.rot(cap_x - 2.05 - 0.7, y + dy, k)
-                rr = (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55)
-                if floor.free("top", rr) and floor.free("bot", rr):
-                    add_via(board, nets["GND"], gx, gy)
-                    floor.add("both", rr, "via")
+            if L.LAYERS == 4:
+                # low-side source pins: a bottom GND tab from the pins in to two
+                # vias onto the GND plane. The router treats the tab as solid
+                # copper, so gate tracks can't cut the sources off.
+                src = [L.rot(*xy(p.GetPosition()), -k)[1] - y
+                       for p in fps[r[f"LS{ph}"]].Pads() if p.GetNumber() == "1"]
+                lo, hi = min(src) - 0.6, max(src) + 0.45
+                tab = rect_pts(cap_x - 3.4, y + lo, L.FET_X - 2.83 + 0.55, y + hi)
+                source_tabs.append((rot_pts(tab, k), f"{ch} {ph} source"))
+                for dy in (lo + 0.6, hi - 0.6):
+                    gx, gy = L.rot(cap_x - 2.75, y + dy, k)
+                    add_via(board, nets["GND"], gx, gy, 0.66, 0.3)
+                    floor.add("both", (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55), "via")
+            else:
+                for dy in (-1.15, 1.15):
+                    gx, gy = L.rot(cap_x - 2.05 - 0.7, y + dy, k)
+                    rr = (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55)
+                    if floor.free("top", rr) and floor.free("bot", rr):
+                        add_via(board, nets["GND"], gx, gy)
+                        floor.add("both", rr, "via")
             m = nets[f"/{ch}/Motor{ph}"]
             for sx in (L.FET_X + 3.37 + 0.75, L.FET_X + 3.37 + 1.85):
                 for sy in (-1.3, 0.0, 1.3):
@@ -416,10 +435,12 @@ def build(netlist_path, out_path):
             put(f"RGH{ph}", fx - 1.7, y - 3.25, scale=False)
         # PWM inputs (pins 1-3, 22-24) face the MCU in the corner, gate
         # outputs face the gate resistors along the FET row
-        put("DRV", 10.6, 10.6, "+y", 180)
-        for ph, (x, y) in zip("ABC", ((12.4, 6.6), (10.6, 6.6), (8.8, 6.6))):
-            put(f"CB{ph}", x, y, "+x", 90)
-        put("CVCC", 7.4, 12.0, "+x", 90)
+        # driver sits inboard of the FETs, low enough that its PWM lines to
+        # the MCU pass below the mounting hole rather than round it
+        put("DRV", 11.5, 3.0, "+y", 180, scale=False)
+        for ph, (x, y) in zip("ABC", ((13.3, -1.0), (11.5, -1.0), (9.7, -1.0))):
+            put(f"CB{ph}", x, y, "+x", 90, scale=False)
+        put("CVCC", 8.3, 4.4, "+x", 90, scale=False)
         # top side
         put("MCU", 21.6, 14.2, "+y", 270, False)
         put("C3V3", 18.6, 10.9, "+x", 0, False)
@@ -459,11 +480,19 @@ def build(netlist_path, out_path):
                              "U15": (4.4, -4.4, 0), "C86": (1.6, -6.8, 90), "C4": (7.4, -3.0, 90),
                              "C51": (7.4, -6.4, 90), "C81": (4.4, -7.6, 0), "C93": (4.4, -1.4, 0)}.items():
         put_shared(ref, x, y, "+x", ang, True)
+    # J1's GND pin sits in the top +BATT pour with the buck's GND pin right
+    # under it: one via through both pads joins them to the GND plane
+    jx = xy(next(p for p in fps["J1"].Pads() if p.GetNumber() == "2").GetPosition())[0]
+    uy = xy(next(p for p in fps["U13"].Pads() if p.GetNumber() == "2").GetPosition())[1]
+    add_via(board, nets["GND"], jx, uy, 0.66, 0.3)
 
     # ---- power copper
     out = L.outline()
     add_zone(board, nets["+BATT"], pcbnew.F_Cu, out, 0, name="BATT top")
     add_zone(board, nets["GND"], pcbnew.B_Cu, out, 0, name="GND bottom")
+    if L.LAYERS == 4:
+        add_zone(board, nets["GND"], pcbnew.In1_Cu, out, 0, name="GND plane")
+        add_zone(board, nets["+BATT"], pcbnew.In2_Cu, out, 0, name="BATT plane")
     for ch, k in L.CHANNELS.items():
         for ph in "ABC":
             y = L.PHASE_Y[ph]
@@ -472,6 +501,8 @@ def build(netlist_path, out_path):
             bot = rect_pts(L.FET_X - 3.37 + 1.35, y - PHASE_HW, L.HALF + 1, y + PHASE_HW)
             add_zone(board, n, pcbnew.F_Cu, rot_pts(top, k), 2, name=f"{ch} {ph} top")
             add_zone(board, n, pcbnew.B_Cu, rot_pts(bot, k), 2, name=f"{ch} {ph} bottom")
+    for pts, name in source_tabs:
+        add_zone(board, nets["GND"], pcbnew.B_Cu, pts, 2, name=name)
     # top GND island under each channel's MCU, stitched to the bottom pour
     for corner_k in range(4):
         pts = rot_pts([(9.9, 9.9), (L.HALF + 2, 9.9), (9.9, L.HALF + 2)], corner_k)
