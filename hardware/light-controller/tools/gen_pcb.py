@@ -36,10 +36,10 @@ RULES = {
 
 NETCLASSES = [
     # name, track, clearance, via, drill, patterns
-    ("Default", 0.2, 0.15, 0.6, 0.3, []),
+    ("Default", 0.15, 0.15, 0.6, 0.3, []),
     ("Power", 0.5, 0.15, 0.8, 0.4,
      ["/VIN", "/VBAT_IN", "/SW_*", "/LEDA_*", "/LEDK_*", "/R1", "/R2", "/G1", "/G2", "/B1", "/B2",
-      "/W1", "/W2", "/BUCK_SW", "/VBUS"]),
+      "/W1", "/W2", "/BUCK_SW"]),
     ("Supply", 0.25, 0.15, 0.6, 0.3, ["/+3V3", "/+1V1", "/VREG_LX"]),
     ("GND", 0.25, 0.15, 0.6, 0.3, ["/GND"]),
 ]
@@ -55,34 +55,43 @@ PLACE = {
     "U3": (-7.4, 9.8, 90, "B"),           # QSPI flash, under the MCU
     "L2": (-12.6, 6.4, 0, "F"),
     "J3": (-12.0, -12.4, 180, "B"),       # SWD
-    "SW1": (-1.0, 12.6, 0, "B"),          # BOOTSEL
     "U1": (-25.0, 11.0, 0, "B"), "L1": (-19.6, 11.4, 0, "B"),     # 3.3 V buck, bottom, under the RM2
     "J1": (33.0, -12.8, 270, "F"), "Q1": (27.0, -11.6, 0, "F"), "D2": (27.2, -5.4, 0, "F"),
-    "J2": (33.0, 6.0, 90, "B"), "J4": (31.3, 12.0, 90, "F"),
-    "TP1": (-15.0, -13.4, 0, "B"), "TP2": (-17.8, -13.4, 0, "B"), "TP3": (-20.6, -13.4, 0, "B"),
-    "TP4": (-23.4, -13.4, 0, "B"), "TP5": (-26.2, -13.4, 0, "B"),
+    "J4": (31.3, 12.0, 90, "F"),
+    "TP1": (-17.6, -13.4, 0, "B"), "TP2": (-20.2, -13.4, 0, "B"), "TP3": (-22.8, -13.4, 0, "B"),
+    "TP4": (-25.4, -13.4, 0, "B"),
 }
 NEAR = {
     "C11": ("U2", "1"), "C12": ("U2", "11"), "C13": ("U2", "20"), "C14": ("U2", "30"),
     "C15": ("U2", "38"), "C16": ("U2", "45"), "C17": ("U2", "6"), "C18": ("U2", "23"),
     "C19": ("U2", "39"), "C20": ("U2", "50"), "C21": ("U2", "49"), "C22": ("U2", "46"),
     "R7": ("U2", "46"), "C23": ("U2", "44"), "C24": ("U2", "53"), "C25": ("U2", "54"),
-    "C26": ("U2", "11"), "C29": ("U3", "8"), "R9": ("U3", "1"), "R10": ("SW1", "1"),
+    "C26": ("U2", "11"), "C29": ("U3", "8"),
     "C31": ("M1", "16"), "C32": ("M1", "14"), "C33": ("M1", "16"),
+    "R18": ("M1", "6"), "R20": ("M1", "10"), "R19": ("M1", "8"), "D4": ("M1", "8"),
     "C9": ("L1", "2"), "C10": ("L1", "2"), "C6": ("U1", "3"), "C7": ("U1", "3"),
     "R4": ("U1", "5"), "C8": ("U1", "6"), "R5": ("U1", "4"), "R6": ("U1", "4"),
     "C1": ("Q1", "3"), "C2": ("Q1", "3"), "C3": ("D2", "1"), "C4": ("Q1", "3"),
-    "D1": ("Q1", "1"), "R1": ("Q1", "1"), "D3": ("J2", "A4"),
+    "D1": ("Q1", "1"), "R1": ("Q1", "1"),
     "R2": ("U2", "41"), "R3": ("U2", "41"), "C5": ("U2", "41"),
-    "R22": ("U2", "40"), "C34": ("U2", "40"), "TH1": (1.0, 0.0),
+    "R22": ("U2", "40"), "C34": ("U2", "40"), "TH1": ("U2", "40"),
     "R11": ("U2", "26"), "R21": ("U2", "9"), "D5": ("U2", "9"),
 }
 
+# Decoupling for the MCU goes on the bottom, directly under the QFN, so the top-side ring
+# around it is free for the pin escapes.
+BOTTOM = {"C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C21", "C23", "C24",
+          "C25", "C26", "R11", "R2", "R3", "C5", "R22", "C34", "TH1",
+          "R18", "R19", "R20", "D4", "C32", "C33"}
+
 # LED driver cells: two columns x two rows between the MCU and the power entry.
 CELLS = {"R": (4.6, -1), "G": (4.6, 1), "B": (16.2, -1), "W": (16.2, 1)}
-# LED clusters on the bottom: one R, G, B, W quad per cluster, three clusters.
-CLUSTERS = [-19.0, 1.0, 21.0]
-QUAD = {"R": (-2.4, -2.4), "G": (2.4, -2.4), "B": (-2.4, 2.4), "W": (2.4, 2.4)}
+# LEDs on the bottom: a 4 x 3 array under the drivers, one row per colour, so each
+# string is three LEDs in a straight line (anode on the left) and no string crosses
+# another. The gaps between rows carry the anode feeds.
+LED_COLS = [5.0, 13.0, 21.0]
+LED_ROWS = {"R": -8.4, "B": -2.8, "G": 2.8, "W": 8.4}
+LED_ROT = 180
 
 
 def cell_parts():
@@ -97,9 +106,8 @@ def cell_parts():
         NEAR[f"R{40 + n}"] = (f"U{4 + n}", "4")
         NEAR[f"R{50 + n}"] = (f"U{4 + n}", "4")
         NEAR[f"C{50 + n}"] = (f"U{4 + n}", "4")
-        for k, x0 in enumerate(CLUSTERS):
-            dx, dy = QUAD[c]
-            PLACE[f"LED{ch * 3 + k + 1}"] = (x0 + dx, dy, 0, "B")
+        for k, x0 in enumerate(LED_COLS):
+            PLACE[f"LED{ch * 3 + k + 1}"] = (x0, LED_ROWS[c], LED_ROT, "B")
 
 
 def write_project():
@@ -278,6 +286,12 @@ def legalize(fps, pads):
 
     for ref, (x, y, rot, side) in PLACE.items():
         put(ref, x, y, rot, side)
+    # via fields that build() adds: under the MCU pad and beside each LED
+    ux = PLACE["U2"][0]
+    occ.append(("B", (ux - 1.6, -1.6, ux + 1.6, 1.6), "EP vias"))
+    # the LED array and its lanes: nothing else on the bottom there
+    ys = LED_ROWS.values()
+    occ.append(("B", (LED_COLS[0] - 3.0, min(ys) - 2.2, LED_COLS[-1] + 3.0, max(ys) + 2.2), "LED array"))
 
     def free(box, side):
         x0, y0, x1, y1 = box
@@ -328,6 +342,8 @@ def legalize(fps, pads):
             nb = min(cands)[1]
             tx, ty = pad_pos(*nb)
             side = side_of[nb[0]]
+        if ref in BOTTOM:
+            side = "B"
         best = None
         r = 0.0
         while best is None and r < 20:
@@ -409,7 +425,18 @@ def build():
     zone(board, None, pcbnew.F_Cu, -hx - 0.1, -hy - 0.1, m1[0] - 3.3, hy + 0.1, "Antenna keep-out", keepout=True)
 
     # thermal vias beside each LED's thermal pad, and GND stitching
+    padboxes = []
+    for fp in board.GetFootprints():
+        for pd in fp.Pads():
+            bb = pd.GetBoundingBox()
+            padboxes.append((pcbnew.ToMM(bb.GetLeft()), pcbnew.ToMM(bb.GetTop()),
+                             pcbnew.ToMM(bb.GetRight()), pcbnew.ToMM(bb.GetBottom()), pd.GetNetname()))
+
     def via(x, y, net, d=0.6, drill=0.3):
+        m = d / 2 + 0.3
+        for x0, y0, x1, y1, n in padboxes:
+            if x0 - m < x < x1 + m and y0 - m < y < y1 + m and n != net.GetNetname():
+                return
         v = pcbnew.PCB_VIA(board)
         v.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
         v.SetWidth(mm(d))
@@ -417,11 +444,12 @@ def build():
         v.SetNet(net)
         board.Add(v)
 
-    for c, (dx, dy) in QUAD.items():
-        for x0 in CLUSTERS:
-            for vx in (-0.55, 0.55):
-                for vy in (-2.5, 2.5):
-                    via(x0 + dx + vx, dy + vy, gnd)
+    # thermal vias at the four corners of each LED, clear of the string running through
+    for y in LED_ROWS.values():
+        for x in LED_COLS:
+            for vx in (-2.4, 2.4):
+                for vy in (-1.0, 1.0):
+                    via(x + vx, y + vy, gnd)
     # MCU exposed pad: 3 x 3 vias
     ux, uy = PLACE["U2"][:2]
     for i in (-1, 0, 1):

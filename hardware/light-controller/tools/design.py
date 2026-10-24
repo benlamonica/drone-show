@@ -39,14 +39,8 @@ ICS = {
     "W25Q16": ([("1", "~CS"), ("6", "CLK"), ("5", "IO0"), ("2", "IO1")],
                [("8", "VCC"), ("3", "IO2"), ("7", "IO3"), ("4", "GND")]),
     "Crystal_GND24": ([("1", "1")], [("3", "3"), ("2", "GND"), ("4", "GND")]),
-    "USBLC6-2SC6": ([("1", "IO1"), ("3", "IO2"), ("2", "GND")],
-                    [("6", "IO1"), ("4", "IO2"), ("5", "VBUS")]),
     "Conn_1x02": ([("1", "1"), ("2", "2")], []),
     "Conn_1x03": ([("1", "1"), ("2", "2"), ("3", "3")], [("MP", "MP")]),
-    "USB_C_16P": ([("A4", "VBUS"), ("A9", "VBUS"), ("B4", "VBUS"), ("B9", "VBUS"),
-                   ("A5", "CC1"), ("B5", "CC2"), ("A6", "D+"), ("B6", "D+"),
-                   ("A7", "D-"), ("B7", "D-"), ("A8", "SBU1"), ("B8", "SBU2")],
-                  [("A1", "GND"), ("A12", "GND"), ("B1", "GND"), ("B12", "GND"), ("S1", "SHIELD")]),
     "RM2": ([("16", "VIN"), ("14", "VDDIO"), ("12", "WL_ON"), ("13", "BT_ON"), ("9", "CS"),
              ("3", "CLK"), ("5", "DIN"), ("6", "DOUT"), ("10", "IRQ")],
             [("8", "GPIO0"), ("18", "GPIO1"), ("17", "GPIO2"), ("2", "NC"), ("19", "NC"), ("20", "NC"),
@@ -79,9 +73,9 @@ F = {
     "SOIC8": "SOIC-8_3.9x4.9mm_P1.27mm", "XTAL": "Crystal_SMD_3225-4Pin_3.2x2.5mm",
     "XAL4020": "L_Coilcraft_XAL4020-XXX", "SRN6028": "L_Bourns-SRN6028",
     "L2016": "L_Abracon_AOTA-B201610", "QFN60": "RP2350A_QFN-60_7x7mm_P0.4mm",
-    "RM2": "RPi_RM2", "XPE2": "LED_Cree-XP", "USBC": "USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal",
+    "RM2": "RPi_RM2", "XPE2": "LED_Cree-XP",
     "SH3": "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal",
-    "WIRE2": "SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm", "BTN": "SW_SPST_PTS810",
+    "WIRE2": "SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm",
     "TP": "TestPoint_Pad_D1.5mm",
 }
 
@@ -142,7 +136,6 @@ add("D2", ("D_TVS", "SMBJ26A", "SMB", "Littelfuse", "SMBJ26A"), {"1": "VIN", "2"
 for i in (1, 2, 3):
     add(f"C{i}", "4u7_50", two("VIN", "GND"), B)
 add("C4", "100n", two("VIN", "GND"), B)
-add("D3", ("D_Schottky", "B5819W", "SOD123", "MCC", "B5819W-TP"), {"1": "VIN", "2": "VBUS"}, B)
 add("R2", "100k", two("VIN", "VBAT_SENSE"), B)
 add("R3", "10k", two("VBAT_SENSE", "GND"), B)
 add("C5", "100n", two("VBAT_SENSE", "GND"), B)
@@ -163,20 +156,23 @@ add("C10", "22u", two("+3V3", "GND"), B)
 
 # --- RP2350A ---------------------------------------------------------------------------
 B = "mcu"
+# Pins are chosen for short routes with the QFN rotated 180 degrees on the board: the
+# right side (GPIO0-11) faces the LED drivers, PWM for the two top-row drivers on
+# GPIO8/9 (PWM4 A/B) and for the bottom row on GPIO2/3 (PWM1 A/B).
 gpio = {
-    "2": "UART_TX", "3": "UART_RX", "4": "PWM_R", "5": "PWM_G", "7": "PWM_B", "8": "PWM_W",
-    "9": "STAT_LED", "12": "GPIO8", "13": "GPIO9", "27": "GPIO16",
+    "2": "UART_TX", "3": "UART_RX", "4": "PWM_G", "5": "PWM_W", "12": "PWM_R", "13": "PWM_B",
+    "9": "STAT_LED", "14": "GPIO10", "15": "GPIO11", "27": "GPIO16",
     "35": "WL_ON", "36": "WL_D", "37": "WL_CS", "40": "NTC_SENSE", "41": "VBAT_SENSE",
-    "42": "GPIO28", "43": "WL_CLK",
+    "43": "WL_CLK",
 }
 mcu = {n: "+3V3" for n in ("1", "11", "20", "30", "38", "45", "44", "53", "54", "49")}
 mcu.update({n: "+1V1" for n in ("6", "23", "39", "50")})
 mcu.update({"46": "VREG_AVDD", "48": "VREG_LX", "47": "GND", "61": "GND", "21": "XIN", "22": "XOUT",
-            "26": "RUN", "24": "SWCLK", "25": "SWDIO", "51": "USB_DM", "52": "USB_DP",
+            "26": "RUN", "24": "SWCLK", "25": "SWDIO",
             "60": "QSPI_SS", "56": "QSPI_SCLK", "57": "QSPI_SD0", "59": "QSPI_SD1",
             "58": "QSPI_SD2", "55": "QSPI_SD3"})
 mcu.update(gpio)
-for n in ("10", "14", "15", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34"):
+for n in ("7", "8", "10", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34", "42", "51", "52"):
     mcu[n] = None   # unused GPIO
 add("U2", ("RP2350A", "RP2350A", "QFN60", "Raspberry Pi", "RP2350A (or RP2354A, then omit U3)"), mcu, B)
 for i, _ in enumerate(("1", "11", "20", "30", "38", "45")):
@@ -201,33 +197,19 @@ add("U3", ("W25Q16", "W25Q16JVSNIQ", "SOIC8", "Winbond", "W25Q16JVSNIQ"),
     {"1": "QSPI_SS", "2": "QSPI_SD1", "3": "QSPI_SD2", "4": "GND", "5": "QSPI_SD0",
      "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B)
 add("C29", "100n", two("+3V3", "GND"), B)
-add("R9", "10k", two("+3V3", "QSPI_SS"), B)
-add("R10", "1k", two("QSPI_SS", "BOOT_BTN"), B)
-add("SW1", ("SW_Push", "BOOTSEL", "BTN", "C&K", "PTS810 SJM 250 SMTR LFS"), two("BOOT_BTN", "GND"), B)
 add("R11", "10k", two("+3V3", "RUN"), B)
 add("R21", "1k", two("STAT_LED", "STAT_LED_A"), B)
 add("D5", "led_ind", {"1": "GND", "2": "STAT_LED_A"}, B)
 
-# --- USB, debug, UART, test pads -------------------------------------------------------
+# --- SWD, FC UART, test pads (no USB: program over SWD, then over Wi-Fi) -------------------------------------------------------
 B = "io"
-add("J2", ("USB_C_16P", "USB-C", "USBC", "GCT", "USB4105-GF-A"),
-    {"A4": "VBUS", "A9": "VBUS", "B4": "VBUS", "B9": "VBUS", "A5": "CC1", "B5": "CC2",
-     "A6": "USB_CONN_DP", "B6": "USB_CONN_DP", "A7": "USB_CONN_DM", "B7": "USB_CONN_DM",
-     "A8": None, "B8": None, "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "S1": "GND"}, B)
-add("R12", "5k1", two("CC1", "GND"), B)
-add("R13", "5k1", two("CC2", "GND"), B)
-add("R14", "27R", two("USB_CONN_DP", "USB_DP"), B)
-add("R15", "27R", two("USB_CONN_DM", "USB_DM"), B)
-add("U4", ("USBLC6-2SC6", "USBLC6-2SC6", "SOT236", "STMicroelectronics", "USBLC6-2SC6"),
-    {"1": "USB_CONN_DP", "6": "USB_CONN_DP", "3": "USB_CONN_DM", "4": "USB_CONN_DM",
-     "2": "GND", "5": "VBUS"}, B)
 add("J3", ("Conn_1x03", "SWD", "SH3", "JST", "SM03B-SRSS-TB(LF)(SN)"),
     {"1": "SWCLK", "2": "GND", "3": "SWDIO", "MP": "GND"}, B)
 add("J4", ("Conn_1x03", "UART to FC", "SH3", "JST", "SM03B-SRSS-TB(LF)(SN)"),
     {"1": "UART_TX_C", "2": "UART_RX_C", "3": "GND", "MP": "GND"}, B)
 add("R16", "100R", two("UART_TX", "UART_TX_C"), B)
 add("R17", "100R", two("UART_RX_C", "UART_RX"), B)
-for i, net in enumerate(("RUN", "GPIO8", "GPIO9", "GPIO16", "GPIO28")):
+for i, net in enumerate(("RUN", "GPIO10", "GPIO11", "GPIO16")):
     add(f"TP{i + 1}", ("TestPoint", net, "TP", "-", "test pad"), {"1": net}, B)
 
 # --- RM2 radio -------------------------------------------------------------------------

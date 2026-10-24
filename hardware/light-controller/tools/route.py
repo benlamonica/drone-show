@@ -45,6 +45,7 @@ def import_ses():
     net_out = next(i for i in routes if isinstance(i, list) and i[0] == "network_out")
     layers = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
     nt, nv = 0, 0
+    existing = {(v.GetPosition().x // 1000, v.GetPosition().y // 1000) for v in b.GetTracks() if v.GetClass() == "PCB_VIA"}
     for net in net_out[1:]:
         ni = b.FindNet(net[1])
         for item in net[2:]:
@@ -63,6 +64,9 @@ def import_ses():
                     nt += 1
             elif item[0] == "via":
                 d, drill = padstacks[item[1]]
+                key = (int(float(item[2]) * scale) // 1000, -int(float(item[3]) * scale) // 1000)
+                if any(abs(key[0] - e[0]) < 5 and abs(key[1] - e[1]) < 5 for e in existing):
+                    continue
                 v = pcbnew.PCB_VIA(b)
                 v.SetPosition(pcbnew.VECTOR2I(int(float(item[2]) * scale), -int(float(item[3]) * scale)))
                 v.SetWidth(d)
@@ -76,6 +80,9 @@ def import_ses():
 
 
 if __name__ == "__main__":
+    for a in sys.argv[1:]:
+        if a.endswith(".ses"):
+            SES = a
     if "--import" not in sys.argv:
         export()
         run()
