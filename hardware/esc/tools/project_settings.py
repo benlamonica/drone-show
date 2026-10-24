@@ -58,7 +58,7 @@ def cls(name, clearance, track, via, drill, prio):
 d["net_settings"]["classes"] = [
     cls("Default", 0.2, 0.2, 0.6, 0.3, 2147483647),
     cls("Power", 0.2, 1.0, 0.8, 0.4, 0),
-    cls("Gate", 0.2, 0.3, 0.6, 0.3, 1),
+    cls("Gate", 0.2, 0.25, 0.6, 0.3, 1),
     cls("Supply", 0.2, 0.3, 0.6, 0.3, 2),
     cls("Phase", 0.2, 0.3, 0.8, 0.4, 3),
 ]

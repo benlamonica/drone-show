@@ -4,7 +4,7 @@ A 2-layer re-layout of [OpenESC-30x30](https://github.com/benlamonica/OpenESC-30
 for PCBWay's cheapest process. The circuit is the prototype's (four AT32F421
 MCUs running AM32, four NSG2065Q gate drivers, 24 SP40N01GHNK FETs, INA186
 current sense, LMR54406 10 V buck, TLV767 3.3 V LDO). What changed is the
-board: 2 layers instead of 6, every passive 0603 or bigger, and a 66 mm
+board: 2 layers instead of 6, every passive 0603 or bigger, and a 74 mm
 octagon instead of a 30.5 mm-pattern square.
 
 ## Ratings
@@ -19,7 +19,9 @@ octagon instead of a 30.5 mm-pattern square.
 
 ## Board
 
-* 66 mm across the flats, octagonal, 1.6 mm FR4, 2 layers, 2 oz copper both sides.
+* 74 mm across the flats, octagonal, 1.6 mm FR4, 2 layers, 2 oz copper both sides.
+  A first pass at 66 mm would not route on two layers (the gate-drive lines
+  had no room between each driver and its FETs), so it grew by 8 mm.
 * Each motor owns one edge. The high-side FET of each half-bridge is on top,
   its low-side FET directly underneath on the bottom, and the phase copper runs
   out to plated motor pads on the edge.
@@ -66,8 +68,12 @@ run DRC to see them.
 
 The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
 
-* `BODY` 90 to 96 mm, so the arm sockets clear the board's corners.
-* `GPS_MAST_R` 38 to 46 mm, so the GPS mast clears the board edge.
+* `BODY` 90 to about 104 mm, so the arm sockets clear the board's corner
+  flats (35 mm from the centre).
+* `GPS_MAST_R` 38 to about 50 mm, so the GPS mast clears the board edge
+  (37 mm from the centre).
+* Check both against the 3D model; they are worked out from the board outline,
+  not test-fitted.
 * Bottom-side parts stand about 1.2 mm proud of the board. The low ring and
   spokes at boss height in the hub touch them, so either raise the ESC on
   3 mm spacers/grommets or drop the ring by 3 mm.

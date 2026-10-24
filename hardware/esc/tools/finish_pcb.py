@@ -36,6 +36,10 @@ def main(src, ses, out):
     if not pcbnew.ImportSpecctraSES(board, ses):
         raise SystemExit("SES import failed")
     tidy_silk(board)
+    # the SES import gives router vias the default 0.4 mm drill; 0.6/0.3 is what was routed
+    for t in board.GetTracks():
+        if t.GetClass() == "PCB_VIA" and t.GetWidth(pcbnew.F_Cu) == MM(0.6):
+            t.SetDrill(MM(0.3))
     # Freerouting necks tracks down to the 0.18 mm MCU pads; PCBWay's minimum is 0.2
     for t in board.GetTracks():
         if t.GetClass() == "PCB_TRACK" and t.GetWidth() < MM(0.2):

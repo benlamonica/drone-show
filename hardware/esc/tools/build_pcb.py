@@ -139,21 +139,24 @@ def place(fp, x, y, axis="+x", angle=0.0, bottom=False):
 
 
 def bbox(fp, margin=0.0):
+    """Courtyard and pads together: some library courtyards are smaller than
+    the pads."""
+    xs, ys = [], []
+    for p in fp.Pads():
+        b = p.GetBoundingBox()
+        a = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
+        c = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
+        xs += [a[0] - 0.1, c[0] + 0.1]
+        ys += [a[1] - 0.1, c[1] + 0.1]
     layer = pcbnew.B_CrtYd if fp.IsFlipped() else pcbnew.F_CrtYd
     poly = fp.GetCourtyard(layer)
     if poly.OutlineCount():
         b = poly.BBox()
-        x0, y0 = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
-        x1, y1 = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
-    else:
-        xs, ys = [], []
-        for p in fp.Pads():
-            b = p.GetBoundingBox()
-            a = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
-            c = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
-            xs += [a[0], c[0]]
-            ys += [a[1], c[1]]
-        x0, y0, x1, y1 = min(xs) - 0.25, min(ys) - 0.25, max(xs) + 0.25, max(ys) + 0.25
+        a = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
+        c = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
+        xs += [a[0], c[0]]
+        ys += [a[1], c[1]]
+    x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
     return (x0 - margin, y0 - margin, x1 + margin, y1 + margin)
 
 
@@ -193,7 +196,7 @@ class Floor:
                 return False
         return True
 
-    def settle(self, fp, x, y, axis, angle, bottom, max_r=12.0, step=0.2, gap=0.22):
+    def settle(self, fp, x, y, axis, angle, bottom, max_r=20.0, step=0.2, gap=0.22):
         """Place fp at the free spot nearest (x, y)."""
         side = "bot" if bottom else "top"
         place(fp, x, y, axis, angle, bottom)
@@ -289,6 +292,8 @@ def rot_pts(pts, k):
 
 
 # --------------------------------------------------------------- main
+HALO = {"MCU": 1.0, "DRV": 0.8}
+LOGIC = L.FET_X / 20.5
 PHASE_HW = 2.5   # half width of a phase strip; strips are 1.5 mm apart
 
 
@@ -393,16 +398,26 @@ def build(netlist_path, out_path):
     for ch, k in L.CHANNELS.items():
         r = roles[ch]
 
-        def put(role, x, y, axis="+x", ang=0.0, bottom=True, **kw):
+        def put(role, x, y, axis="+x", ang=0.0, bottom=True, scale=True, **kw):
+            # the logic positions were laid out for FET_X = 20.5 and scale with it
+            if scale:
+                x, y = x * LOGIC, y * LOGIC
             px, py = L.rot(x, y, k)
             floor.settle(fps[r[role]], px, py, axis, ang + 90 * k, bottom, **kw)
+            if role in HALO:
+                # keep a ring clear round the fine-pitch ICs so every pin can escape
+                b = bbox(fps[r[role]])
+                m = HALO[role]
+                floor.add("bot" if bottom else "top", (b[0] - m, b[1] - m, b[2] + m, b[3] + m), role)
 
         for ph in "ABC":
             y = L.PHASE_Y[ph]
-            put(f"RGL{ph}", fx - 1.7, y - 1.9)
-            put(f"RGH{ph}", fx - 1.7, y - 3.25)
-        put("DRV", 10.6, 10.6, "+y", 0)
-        for ph, (x, y) in zip("ABC", ((13.6, 7.8), (14.2, 9.6), (13.4, 11.4))):
+            put(f"RGL{ph}", fx - 1.7, y - 1.9, scale=False)
+            put(f"RGH{ph}", fx - 1.7, y - 3.25, scale=False)
+        # PWM inputs (pins 1-3, 22-24) face the MCU in the corner, gate
+        # outputs face the gate resistors along the FET row
+        put("DRV", 10.6, 10.6, "+y", 180)
+        for ph, (x, y) in zip("ABC", ((12.4, 6.6), (10.6, 6.6), (8.8, 6.6))):
             put(f"CB{ph}", x, y, "+x", 90)
         put("CVCC", 7.4, 12.0, "+x", 90)
         # top side
@@ -462,7 +477,7 @@ def build(netlist_path, out_path):
         pts = rot_pts([(9.9, 9.9), (L.HALF + 2, 9.9), (9.9, L.HALF + 2)], corner_k)
         add_zone(board, nets["GND"], pcbnew.F_Cu, pts, 1, name=f"MCU GND {corner_k}")
         placed = 0
-        for u in (13.0, 16.0, 19.0, 22.0, 25.0, 28.0):
+        for u in (13.0, 16.0, 19.0, 22.0, 25.0, 28.0, 31.0, 34.0):
             for w in (-9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0):
                 x0 = (u + w) / L.S2
                 y0 = (u - w) / L.S2

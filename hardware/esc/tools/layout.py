@@ -3,11 +3,10 @@
 All coordinates are mm from the board centre, KiCad screen axes (x right,
 y down). The board is drawn with the FC connector edge (front) up.
 
-The board is an octagon, 66 mm across the flats: four 21.7 mm axis flats at
-+-33 mm and four corner flats 31 mm from the centre. The corners point at the
-arms. It needs a slightly bigger hub than frame/frame.py has today:
-BODY 90 -> 96 mm puts the arm socket ends at 32.3 mm, and GPS_MAST_R 38 -> 46 mm
-moves the GPS mast clear of the left edge.
+The board is an octagon, 74 mm across the flats: four 24.6 mm axis flats at
++-37 mm and four corner flats 35 mm from the centre. The corners point at the
+arms. It needs a bigger hub than frame/frame.py has today: BODY 90 -> 104 mm
+and GPS_MAST_R 38 -> 50 mm (see README.md).
 
 Each motor channel owns one edge. Its three half-bridges sit in a row along
 that edge: high-side FET on top, low-side FET directly underneath on the
@@ -19,8 +18,8 @@ import math
 
 S2 = math.sqrt(2.0)
 
-HALF = 33.0           # axis flats
-CHAMFER = 31.0        # corner flats, distance from the centre
+HALF = 37.0           # axis flats
+CHAMFER = 35.0        # corner flats, distance from the centre
 EDGE_MARGIN = 0.4     # parts to board edge
 
 HOLE_PITCH = 30.5     # stack standard
@@ -35,8 +34,8 @@ HOLE_PART_KEEPOUT = 3.7   # grommet / standoff flange radius, no parts inside
 CHANNELS = {"ESC2": 0, "ESC1": 1, "ESC3": 2, "ESC4": 3}
 
 PHASE_Y = {"A": -6.5, "B": 0.0, "C": 6.5}
-FET_X = 20.5          # centre of the stacked high/low-side FET pair
-MOTOR_PAD_X = 29.0
+FET_X = 24.0          # centre of the stacked high/low-side FET pair
+MOTOR_PAD_X = 32.6
 MOTOR_PAD_W, MOTOR_PAD_H, MOTOR_PAD_DRILL = 3.2, 4.0, 1.2
 
 # prototype symbol pin numbers for the motor pads

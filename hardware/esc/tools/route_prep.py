@@ -1,14 +1,19 @@
 """Prepare the placed board for Freerouting. Run with KiCad's Python.
 
-    python3 tools/route_prep.py build/placed.kicad_pcb build/fanned.kicad_pcb build/route.dsn
+    python3 tools/route_prep.py signals build/placed.kicad_pcb build/fanned.kicad_pcb build/route.dsn
+    python3 tools/route_prep.py phase build/fanned.kicad_pcb build/route.ses build/route_phase.dsn
 
 GND and +BATT are not routed as tracks: they are the bottom and top pours.
 Every top-side GND pad and bottom-side +BATT pad gets a short stub to its own
 via here, so the pour on the other layer picks it up. The board-wide pours
-are left out of the DSN (Freerouting would treat them as solid obstacles);
-the phase islands stay in, as planes Freerouting can connect to. Track
-keepouts on top keep signals out of the +BATT path from the centre to each
-channel's high-side FETs.
+are left out of the DSN (Freerouting would treat them as solid obstacles).
+
+Routing is two passes. Pass 1 routes every signal with the phase strips
+turned into keepouts, so no signal track cuts the motor current path. Pass 2
+keeps pass 1's tracks fixed and routes only the phase nets' small-signal pins
+(gate driver, bootstrap caps, BEMF dividers) out to their strips. Track
+keepouts on top also keep signals out of the +BATT path from the centre to
+each channel's high-side FETs.
 """
 import math
 import os
@@ -83,6 +88,13 @@ class Obstacles:
                 if x + r + GAP > x0 and x - r - GAP < x1 and y + r + GAP > y0 and y - r - GAP < y1:
                     return False
         return True
+
+    def add_track(self, ax, ay, bx, by, net, width, layer):
+        n = max(1, int(math.hypot(bx - ax, by - ay) / 0.2))
+        r = width / 2
+        for i in range(n + 1):
+            x, y = ax + (bx - ax) * i / n, ay + (by - ay) * i / n
+            self.items.append((x - r, y - r, x + r, y + r, net, {layer}, False))
 
     def add_via(self, x, y, net):
         r = VIA / 2
@@ -173,7 +185,7 @@ def fanout(board):
             own = (*xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop())), *xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom())))
             layer = "B" if bottom else "F"
             placed = False
-            for dist in (0.15, 0.4, 0.7, 1.0, 1.4, 1.8, 2.4):
+            for dist in (0.15, 0.4, 0.7, 1.0, 1.4, 1.8):
                 for da in angles:
                     a = away + math.radians(da)
                     ext = abs(math.cos(a)) * sx + abs(math.sin(a)) * sy
@@ -193,6 +205,7 @@ def fanout(board):
                     via.SetNet(p.GetNet())
                     board.Add(via)
                     add_track(board, p, v(x, y), bottom, width)
+                    obs.add_track(px, py, x, y, p.GetNetCode(), width, layer)
                     obs.add_via(x, y, p.GetNetCode())
                     placed = True
                     done += 1
@@ -205,43 +218,69 @@ def fanout(board):
     return gnd, batt
 
 
-def add_keepout(board, pts, layer, name):
+def add_keepout(board, outline, layer, name, vias=False):
     z = pcbnew.ZONE(board)
     z.SetIsRuleArea(True)
     z.SetLayer(layer)
     z.SetDoNotAllowTracks(True)
-    z.SetDoNotAllowVias(False)
+    z.SetDoNotAllowVias(vias)
     z.SetDoNotAllowPads(False)
     z.SetDoNotAllowZoneFills(False)
     z.SetDoNotAllowFootprints(False)
     o = z.Outline()
-    o.NewOutline()
-    for x, y in pts:
-        o.Append(MM(CX + x), MM(CY + y))
+    if isinstance(outline, list):
+        o.NewOutline()
+        for x, y in outline:
+            o.Append(MM(CX + x), MM(CY + y))
+    else:
+        o.AddOutline(outline)
     z.SetZoneName(name)
     board.Add(z)
 
 
-def main(src, fanned, dsn):
-    board = pcbnew.LoadBoard(src)
-    fanout(board)
-    board.Save(fanned)
-    # routing copy only: +BATT highways on top, centre to each channel's
-    # high-side drains, stay free of signal tracks
-    for k in range(4):
-        pts = [L.rot(x, y, k) for x, y in
-               ((7.5, -9.0), (L.FET_X - 1.0, -9.0), (L.FET_X - 1.0, 9.0), (7.5, 9.0))]
-        add_keepout(board, pts, pcbnew.F_Cu, f"BATT highway {k}")
-    # routing copy: drop the board-wide pours and the MCU GND islands
+def strip_pours(board):
+    """Drop the board-wide pours and the MCU GND islands: Freerouting would
+    treat them as solid copper."""
     for z in list(board.Zones()):
         if z.GetIsRuleArea():
             continue
         name = z.GetZoneName()
         if name in ("BATT top", "GND bottom") or name.startswith("MCU GND"):
             board.Remove(z)
-    ok = pcbnew.ExportSpecctraDSN(board, dsn)
-    print("dsn", dsn, ok)
+
+
+def signals(src, fanned, dsn):
+    """Pass 1: every signal except the phase nets. Freerouting doesn't treat
+    another net's plane as an obstacle, so the phase strips become keepouts
+    here; that keeps signal tracks from cutting the motor current path."""
+    board = pcbnew.LoadBoard(src)
+    fanout(board)
+    board.Save(fanned)
+    # +BATT highways on top, centre to each channel's high-side drains
+    for k in range(4):
+        pts = [L.rot(x, y, k) for x, y in
+               ((7.5, -9.0), (L.FET_X - 1.0, -9.0), (L.FET_X - 1.0, 9.0), (7.5, 9.0))]
+        add_keepout(board, pts, pcbnew.F_Cu, f"BATT highway {k}")
+    strip_pours(board)
+    for z in list(board.Zones()):
+        if not z.GetIsRuleArea() and "/Motor" in z.GetNetname():
+            add_keepout(board, z.Outline().COutline(0), z.GetLayer(), "phase " + z.GetZoneName(), vias=True)
+            board.Remove(z)
+    print("dsn", dsn, pcbnew.ExportSpecctraDSN(board, dsn))
+
+
+def phase(fanned, ses, dsn):
+    """Pass 2: the phase nets' small-signal pins (driver, bootstrap, BEMF
+    divider) out to their strips. Pass 1's tracks go in as protected wiring."""
+    board = pcbnew.LoadBoard(fanned)
+    if not pcbnew.ImportSpecctraSES(board, ses):
+        raise SystemExit("SES import failed")
+    strip_pours(board)
+    pcbnew.ExportSpecctraDSN(board, dsn)
+    t = open(dsn).read().replace("(type route)", "(type protect)")
+    open(dsn, "w").write(t)
+    print("dsn", dsn)
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    {"signals": signals, "phase": phase}[sys.argv[1]](*sys.argv[2:])
