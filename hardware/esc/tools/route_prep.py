@@ -26,8 +26,11 @@ MM = pcbnew.FromMM
 CX, CY = 150.0, 100.0
 VIA, DRILL = 0.66, 0.3
 # exposed pad number of each part that has one
+# gate driver PWM inputs: they face the FETs, where the router can't get a
+# via in among the gate tracks, so they get theirs here (the MCU is on top)
+DRIVER_PWM_PINS = ("1", "2", "3", "22", "23", "24")
 EXPOSED_PADS = {"AT32F421G8U7": "29", "NSG2065Q": "25", "TLV76733DRVR": "7"}
-GAP = 0.3
+GAP = 0.22
 
 
 def v(x, y):
@@ -136,7 +139,10 @@ def fanout(board):
         ep_num = EXPOSED_PADS.get(fp.GetValue())
         ep_via = False
         # exposed pad first: if it gets no via, its ground pins fan out too
-        for p in sorted(fp.Pads(), key=lambda q: q.GetNumber() != ep_num):
+        # the middle PWM pin of each group of three goes first and straight
+        # out, so its neighbours fan out at an angle round its via
+        for p in sorted(fp.Pads(), key=lambda q: (q.GetNumber() != ep_num, q.GetNumber() not in ("2", "23")
+                                                   or fp.GetValue() != "NSG2065Q")):
             if p.GetDrillSize().x > 0:
                 continue
             net = p.GetNetname()
@@ -151,7 +157,8 @@ def fanout(board):
                 # the outer pours get cut up by the routing, so every GND and
                 # +BATT pad gets its own via to the inner planes, except the
                 # FETs (big pads in the pours, low-side sources on their tabs)
-                if net not in ("GND", "+BATT") or fp.GetValue() == "SP40N01GHNK":
+                pwm = fp.GetValue() == "NSG2065Q" and p.GetNumber() in DRIVER_PWM_PINS
+                if not pwm and (net not in ("GND", "+BATT") or fp.GetValue() == "SP40N01GHNK"):
                     continue
             if p.GetNumber() == ep_num:
                 # exposed pad: one via in it, the middle if nothing on the

@@ -104,9 +104,9 @@ def esc_pads():
     for num, (x, y, ang) in L.battery_pads().items():
         add_pad(fp, num, x, y, L.BATT_PAD_D, L.BATT_PAD_D, drill=L.BATT_PAD_DRILL,
                 shape=pcbnew.PAD_SHAPE_CIRCLE)
-    # FC wire pads, top side next to the connector, same order as the JST: +BATT GND CURR TX M1 M2 M3 M4
-    for num, (x, y) in L.wire_pads().items():
-        add_pad(fp, num, x, y, L.WIRE_PAD_W, L.WIRE_PAD_H)
+    # No FC wire pads: the FC plugs into J1, and pads behind the connector
+    # sat right over the front channel's gate driver, where the board is
+    # most crowded. Pins 3-10 of the symbol are left unplaced.
     # mounting holes: unplated M3 holes with a copper-free ring, matching the
     # FC so the boards stack on rubber standoffs
     for x, y in L.holes():

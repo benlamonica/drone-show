@@ -3,8 +3,8 @@
 All coordinates are mm from the board centre, KiCad screen axes (x right,
 y down). The board is drawn with the FC connector edge (front) up.
 
-The board is an octagon, 74 mm across the flats: four 24.6 mm axis flats at
-+-37 mm and four corner flats 35 mm from the centre. The corners point at the
+The board is an octagon, 80 mm across the flats: four 26.9 mm axis flats at
++-40 mm and four corner flats 37.8 mm from the centre. The corners point at the
 arms. It needs a slightly bigger hub than frame/frame.py has today (see
 README.md).
 
@@ -21,8 +21,8 @@ import math
 
 S2 = math.sqrt(2.0)
 
-HALF = 37.0           # axis flats
-CHAMFER = 35.0        # corner flats, distance from the centre
+HALF = 40.0           # axis flats
+CHAMFER = 37.8        # corner flats, distance from the centre
 EDGE_MARGIN = 0.4     # parts to board edge
 LAYERS = 4
 
@@ -38,8 +38,8 @@ HOLE_PART_KEEPOUT = 3.7   # grommet / standoff flange radius, no parts inside
 CHANNELS = {"ESC2": 0, "ESC1": 1, "ESC3": 2, "ESC4": 3}
 
 PHASE_Y = {"A": -6.5, "B": 0.0, "C": 6.5}
-FET_X = 24.0          # centre of the stacked high/low-side FET pair
-MOTOR_PAD_X = 32.6
+FET_X = 27.0          # centre of the stacked high/low-side FET pair
+MOTOR_PAD_X = 35.6
 MOTOR_PAD_W, MOTOR_PAD_H, MOTOR_PAD_DRILL = 3.2, 4.0, 1.2
 
 # prototype symbol pin numbers for the motor pads
@@ -53,8 +53,6 @@ MOTOR_PAD_NUM = {
 BATT_PAD_D, BATT_PAD_DRILL = 4.6, 2.0   # 14 AWG goes through the hole
 BATT_X, BATT_Y = (-3.0, 4.6), 2.6
 
-WIRE_PAD_W, WIRE_PAD_H, WIRE_PAD_PITCH = 1.0, 2.2, 1.5
-WIRE_PAD_Y = -11.0
 JST_POS = (0.0, -6.4)
 
 
@@ -99,10 +97,3 @@ def battery_pads():
     on the bottom GND pour. Power enters in the middle and spreads out to the
     four edges."""
     return {"1": (BATT_X[0], BATT_Y, 0.0), "2": (BATT_X[1], BATT_Y, 0.0)}
-
-
-def wire_pads():
-    out = {}
-    for i in range(8):
-        out[str(3 + i)] = (-3.5 * WIRE_PAD_PITCH + i * WIRE_PAD_PITCH, WIRE_PAD_Y)
-    return out

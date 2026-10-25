@@ -4,8 +4,44 @@ A 4-layer re-layout of [OpenESC-30x30](https://github.com/benlamonica/OpenESC-30
 for PCBWay's standard process. The circuit is the prototype's (four AT32F421
 MCUs running AM32, four NSG2065Q gate drivers, 24 SP40N01GHNK FETs, INA186
 current sense, LMR54406 10 V buck, TLV767 3.3 V LDO). What changed is the
-board: 4 layers instead of 6, every passive 0603 or bigger, and a 74 mm
+board: 4 layers instead of 6, every passive 0603 or bigger, and an 80 mm
 octagon instead of a 30 x 30 mm square.
+
+## Status: not ready to order yet
+
+The board is placed and routed with no clearance errors, but 19 connections
+are still open (KiCad DRC lists them as unconnected). They are short signal
+hops in the crowded area round each MCU and gate driver, which the
+autorouter and the clean-up router could not fit. Finish them in KiCad with
+the interactive router (push and shove), run DRC until it shows 0
+unconnected, then run `tools/export.sh` again: the files in `fab/` are from
+the unfinished board.
+
+| Net | From | To |
+|---|---|---|
+| +3V3 | U2 pad 17 | track at (-13.2, 23.7) |
+| +3V3 | track at (-23.7, -14.4) | U7 pad 17 |
+| +3V3 | track at (29.6, 15.0) | U5 pad 17 |
+| +BATT | zone at (40.0, -13.5) | zone at (40.0, -13.5) |
+| /ESC1/AH | U2 pad 20 | U4 pad 22 |
+| /ESC1/CL | track at (-4.9, 11.7) | U2 pad 13 |
+| /ESC1/MotorA | track at (2.8, 13.3) | track at (-1.1, 12.7) |
+| /ESC1/vdda | track at (-12.9, 31.5) | U2 pad 5 |
+| /ESC2/CL | U6 pad 3 | U5 pad 13 |
+| /ESC2/FBA | track at (29.3, 17.7) | U5 pad 6 |
+| /ESC2/MotorB | track at (11.1, -2.7) | U6 pad 15 |
+| /ESC3/BH | U7 pad 19 | via at (-14.4, -3.8) |
+| /ESC3/MotorB | track at (-11.9, 3.3) | U8 pad 15 |
+| /ESC3/vdda | track at (-32.9, -12.8) | U7 pad 5 |
+| /ESC4/AH | U10 pad 22 | U9 pad 20 |
+| /ESC4/BH | U9 pad 19 | via at (3.8, -14.4) |
+| /ESC4/CL | U10 pad 3 | U9 pad 13 |
+| Net-(U4-VB2) | track at (-1.1, 12.3) | C32 pad 2 |
+| Net-(U9-NRST) | track at (14.2, -35.6) | U9 pad 4 |
+
+The +BATT entry is a small piece of top pour that needs a via to the +BATT
+layer. The schematic-parity warnings for U3 pins 3 to 11 are expected: the
+FC wire pads were taken off the board (J1 carries those signals).
 
 ## Ratings
 
@@ -13,19 +49,20 @@ octagon instead of a 30 x 30 mm square.
 |---|---|
 | Battery | 4S to 6S (25.2 V max). The FETs are 40 V parts, so leave the prototype's 6S ceiling alone. |
 | Current | about 35 A continuous per motor with airflow, limited by 2 oz copper and the FET package. Show flying (hover plus gentle moves) needs a fraction of that. |
-| Firmware | AM32 for AT32F421, same pinout as OpenESC-30x30, flashed over the signal pads. |
-| FC link | JST-SH 8-pin (Betaflight 4-in-1 order: VBAT, GND, CURR, TLM, M1 to M4) plus solder pads beside it. |
+| Firmware | AM32 for AT32F421, same pinout as OpenESC-30x30, flashed over the motor signal lines through J1 (AM32 bootloader), or over SWD test points. |
+| FC link | JST-SH 8-pin (Betaflight 4-in-1 order: VBAT, GND, CURR, TLM, M1 to M4). |
 | Mounting | 30.5 mm M3 pattern, 3.3 mm unplated holes with a 6.9 mm copper-free ring, so it stacks with the FC on rubber standoffs. |
 
 ## Board
 
-* 74 mm across the flats, octagonal, 1.6 mm FR4, 4 layers: 2 oz outer,
+* 80 mm across the flats, octagonal, 1.6 mm FR4, 4 layers: 2 oz outer,
   1 oz inner. Layer 2 is a solid GND plane; layer 3 is a +BATT pour that a
   few signal tracks also cross.
 * Two layers were tried first and did not work: at 66 mm the gate-drive lines
   had no room, and at 74 mm the routing cut the GND pour into islands, which
   is no good on a board switching 100+ A. The inner planes fix both and give a
-  much shorter commutation loop.
+  much shorter commutation loop. Even on four layers the autorouter needed
+  the extra room of 80 mm to get the PWM lines from each MCU to its driver.
 * Each motor owns one edge. The high-side FET of each half-bridge is on top,
   its low-side FET directly underneath on the bottom, and the phase copper runs
   out to plated motor pads on the edge.
@@ -73,10 +110,10 @@ run DRC to see them.
 
 The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
 
-* `BODY` 90 to about 104 mm, so the arm sockets clear the board's corner
-  flats (35 mm from the centre).
-* `GPS_MAST_R` 38 to about 50 mm, so the GPS mast clears the board edge
-  (37 mm from the centre).
+* `BODY` 90 to about 110 mm, so the arm sockets clear the board's corner
+  flats (37.8 mm from the centre).
+* `GPS_MAST_R` 38 to about 53 mm, so the GPS mast clears the board edge
+  (40 mm from the centre).
 * Check both against the 3D model; they are worked out from the board outline,
   not test-fitted.
 * Bottom-side parts stand about 1.2 mm proud of the board. The low ring and
@@ -87,9 +124,10 @@ The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
 
 ## Notes and limits
 
-* The signal tracks are autorouted (Freerouting). DRC is clean, but have a
-  look over the gate drive and current-sense routing before ordering a big
-  batch; a hand touch-up there is worthwhile.
+* The signal tracks are autorouted (Freerouting), then finished by
+  `tools/rescue_route.py`, a small grid maze router for what Freerouting
+  leaves open. Have a look over the gate drive and current-sense routing
+  before ordering a big batch.
 * RS2205-class motors are usually wound for 4S. On 6S pick a lower KV
   (about 1700 to 1900 KV) or limit throttle in the FC.
 * The FETs and gate drivers sit on both sides, so the board can't be all
@@ -106,6 +144,9 @@ Everything is generated by scripts in `tools/` with KiCad 10:
 FREEROUTING=/path/to/freerouting-1.9.0.jar sh tools/build.sh   # schematic -> routed board
 sh tools/export.sh                                             # board -> fab/
 ```
+
+`tools/build.sh` ends with the rescue router, which runs in plain Python 3
+with numpy, scipy and Pillow rather than KiCad's Python.
 
 `tools/layout.py` holds the board geometry (size, FET positions, pads) that
 the footprint and placement scripts share.
