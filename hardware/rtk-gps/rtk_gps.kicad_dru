@@ -1,0 +1,43 @@
+(version 1)
+# PCBWay standard 2-layer process (1.6 mm FR-4, 1 oz, HASL/ENIG). Values match the board setup
+# in rtk_gps.kicad_pro; the rules below add the checks the global settings cannot express.
+
+(rule "PCBWay min annular ring"
+  (constraint annular_width (min 0.15mm)))
+
+(rule "PCBWay min drill"
+  (constraint hole_size (min 0.3mm)))
+
+(rule "PCBWay hole to hole"
+  (constraint hole_to_hole (min 0.5mm)))
+
+(rule "PCBWay copper to board edge"
+  (constraint edge_clearance (min 0.3mm)))
+
+(rule "PCBWay silkscreen line and text"
+  (layer "?.Silkscreen")
+  (constraint text_thickness (min 0.15mm))
+  (constraint text_height (min 0.8mm)))
+
+(rule "Silk off exposed copper"
+  (layer "?.Silkscreen")
+  (constraint silk_clearance (min 0.1mm)))
+
+# Fine-pitch parts (RP2350 QFN-60 0.4 mm, MMC5983MA LGA-16 0.5 mm, USB-C 0.5 mm): pad gaps are 0.2 mm,
+# so 0.15 mm is the floor there. Everywhere else keep the more comfortable 0.2 mm.
+(rule "General clearance 0.2 mm"
+  (condition "A.Type != 'Pad' || B.Type != 'Pad'")
+  (constraint clearance (min 0.15mm) (opt 0.2mm)))
+
+(rule "RF feed keep-clear"
+  (condition "A.NetName == '/RF_IN' && B.Type != 'Zone'")
+  (constraint clearance (min 0.25mm)))
+
+(rule "Plane clearance"
+  (condition "A.Type == 'Zone' || B.Type == 'Zone'")
+  (constraint clearance (min 0.25mm)))
+
+(rule "Thermal spokes"
+  (condition "A.Type == 'Zone'")
+  (constraint thermal_spoke_width (min 0.3mm))
+  (constraint thermal_relief_gap (min 0.25mm)))

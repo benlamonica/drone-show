@@ -1,0 +1,78 @@
+** Drc report for rtk_gps.kicad_pcb **
+** Created on 2026-10-24T09:24:55+0000 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 22 DRC violations **
+[connection_width]: Copper connection too narrow (board setup constraints minimum connection width 0.1500 mm; actual 0.1282 mm) (F.Cu)
+    Rule: board setup constraints; warning
+    @(117.1000 mm, 121.5500 mm): Pad 44 [/+3V3] of U1 on F.Cu
+    @(116.8975 mm, 122.9795 mm): Track [/+3V3] on F.Cu, length 1.1299 mm
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(106.9000 mm, 128.5000 mm): Reference field of U2
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(130.9700 mm, 125.6000 mm): Reference field of C16
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(110.5000 mm, 133.3700 mm): Reference field of C18
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(116.8700 mm, 119.3000 mm): Reference field of C15
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(113.8000 mm, 120.9700 mm): Reference field of C1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(127.0000 mm, 131.9700 mm): Reference field of C8
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(125.2000 mm, 130.1700 mm): Reference field of C4
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(113.4000 mm, 118.4500 mm): Reference field of L1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(129.0000 mm, 127.3700 mm): Reference field of C17
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(134.2000 mm, 120.1700 mm): Reference field of C24
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(110.7700 mm, 112.2000 mm): Reference field of R2
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(113.1700 mm, 131.0000 mm): Reference field of C7
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(109.6000 mm, 118.1700 mm): Reference field of C14
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(120.2700 mm, 119.3000 mm): Reference field of C11
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(106.5000 mm, 118.1700 mm): Reference field of C13
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(136.5000 mm, 135.3000 mm): Reference field of U4
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(118.5700 mm, 119.3000 mm): Reference field of C6
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(124.0000 mm, 111.3200 mm): Reference field of C21
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(135.0700 mm, 122.0000 mm): Reference field of R11
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(131.7700 mm, 134.6000 mm): Reference field of R10
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(125.2000 mm, 128.5700 mm): Reference field of C5
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

@@ -1,3 +1,4 @@
 ntrip-env
 build
 .vscode
+.DS_Store

@@ -289,6 +289,16 @@ int rtkeng_rover_byte(rtkeng_t *e, unsigned char data)
         if (!e->time_seeded&&e->rov.time.time!=0) {
             rtkpico_set_gps_time(e->rov.time);
             e->time_seeded=1;
+            /* RTCM3 MSM carries only time of week (GLONASS: time of day), and
+             * adjweek() takes the week from rtcm.time, seeding it from the
+             * clock on the first message and only ever stepping half a week
+             * from there. Corrections that arrive before the rover has
+             * tracked anything latch the seed week, and every base epoch then
+             * reads as years old (2026-10-10: age 84672000 s, 140 weeks).
+             * Re-anchor on real time and drop what was stamped with the
+             * wrong week. */
+            e->rtcm.time=e->rov.time;
+            e->n_base=0;
         }
         return run_epoch(e);
     }
