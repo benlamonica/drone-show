@@ -10,8 +10,8 @@
 # the router skips the Power class.
 # Steps: netlist -> footprints -> placement -> fanout + DSN -> autoroute ->
 # import + pour fill -> clean-up router -> drone-esc.kicad_pcb. The
-# clean-up router needs a Python 3 with numpy, scipy and Pillow (PYTHON=...). tools/export.sh then makes the
-# fab files.
+# clean-up router needs a Python 3 with numpy, scipy and Pillow (PYTHON=...).
+# tools/export.sh then makes the fab files.
 set -e
 cd "$(dirname "$0")/.."
 FREEROUTING=${FREEROUTING:-freerouting-1.9.0.jar}
