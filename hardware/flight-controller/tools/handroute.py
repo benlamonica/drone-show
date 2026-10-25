@@ -22,18 +22,25 @@ from PIL import Image, ImageDraw
 import make_board as mb
 import route as rt
 
-GRID = 0.05                       # mm per cell
+GRID = float(os.environ.get("GRID", "0.05"))   # mm per cell
+# extra margin added to every obstacle for rasterising error (default one cell)
+SLACK = float(os.environ.get("SLACK", GRID))
 VIA_D, VIA_DRILL = 0.6, 0.3
 CLEAR = 0.15
-VIA_COST = 40                     # in cells
+VIA_COST = 2 / GRID               # in cells (2 mm of track)
 # ground is poured on both layers, so its tracks can be ripped up freely; other
 # nets only when RIP_ANY is set
 RIP_ANY = bool(os.environ.get("RIP_ANY"))
 MM = pcbnew.FromMM
 
 
+# signal width; SIGNAL_W=0.15 (the fab minimum) lets a track escape between
+# 0.4 mm pitch QFN pins
+SIGNAL_W = float(os.environ.get("SIGNAL_W", "0.2"))
+
+
 def width_for(net):
-    return 0.4 if net in ("VBAT", "+5V", "BUCK_SW") else 0.2
+    return 0.4 if net in ("VBAT", "+5V", "BUCK_SW") else SIGNAL_W
 
 
 def clearance_for(net):
@@ -231,7 +238,7 @@ def astar(maps, starts, goals, rip_cost=0):
         if c > cost.get(cur, 1e18):
             continue
         n += 1
-        if n > 6_000_000:
+        if n > 20_000_000:
             return None
         i, j, l = cur
         for di, dj, w in steps:
@@ -381,7 +388,7 @@ def main():
         if not s or not g:
             print(f"  {net}: could not find its copper")
             continue
-        gt, gv = w / 2 + c + GRID, VIA_D / 2 + c + GRID     # one cell of slack for rasterising
+        gt, gv = w / 2 + c + SLACK, VIA_D / 2 + c + SLACK
         maps = obstacle_maps(board, grid, net, gt, gv)
         path = astar(maps, s, g)
         ripped = set()

@@ -1,7 +1,7 @@
 """Generate showfc.kicad_sym and show-fc.kicad_sch from design.py.
 
 The schematic is one A1 sheet, one block per function. Every pin ends in a
-net label, so the drawing reads like a netlist: find a net by name with
+global net label, so the drawing reads like a netlist: find a net by name with
 KiCad's search. Re-run after any change to design.py; hand edits to the
 generated files are overwritten.
 """
@@ -259,8 +259,8 @@ def build_symbols():
                     '      (circle (center 0 0) (radius 0.762) (stroke (width 0.254) (type default)) (fill (type none)))\n    )\n')
             pos = {}
             if kind == "TP":
-                body += f'    (symbol "{name}_1_1"\n' + pin_sexpr("1", "1", "passive", 0, -3.302, 90, 2.54) + "    )\n"
-                pos = {"1": (0, 3.302, 270)}
+                body += f'    (symbol "{name}_1_1"\n' + pin_sexpr("1", "1", "passive", 0, -3.81, 90, 2.54) + "    )\n"
+                pos = {"1": (0, 3.81, 270)}
             power = ""
             extra = " (pin_numbers hide) (pin_names hide)"
         else:
@@ -300,8 +300,9 @@ def snap(v):
 
 
 def label(net, x, y, ang):
-    just = {0: "left bottom", 90: "left bottom", 180: "right bottom", 270: "right bottom"}[ang]
-    return (f'  (label "{net}" (at {fmt(x)} {fmt(y)} {ang}) (fields_autoplaced)\n'
+    # global labels, so the schematic's net names match the board's ("GND", not "/GND")
+    just = {0: "left", 90: "left", 180: "right", 270: "right"}[ang]
+    return (f'  (global_label "{net}" (shape passive) (at {fmt(x)} {fmt(y)} {ang}) (fields_autoplaced)\n'
             f'    (effects (font (size 1.27 1.27)) (justify {just}))\n    (uuid {uid("lbl", net, x, y)})\n  )\n')
 
 

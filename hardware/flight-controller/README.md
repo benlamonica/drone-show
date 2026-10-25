@@ -12,10 +12,11 @@ standard service.
 |---|---|
 | ![top](images/top.png) | ![bottom](images/bottom.png) |
 
-> **Status: not ready to order.** Everything is routed except four
-> connections, which need KiCad's interactive router (see
-> [Finishing the routing](#finishing-the-routing)). The files in `fab/` are
-> from this state; regenerate them after the last four tracks are in.
+> **Status: fully routed.** KiCad 10 DRC (with schematic parity and zone
+> refill) and ERC are clean: no errors, no warnings, nothing unconnected. The
+> files in `fab/` are from this board. Go through
+> [Check before the first order](#check-before-the-first-order) before
+> ordering.
 
 | | |
 |---|---|
@@ -47,7 +48,8 @@ two layers. The 30.5 mm hole pattern is from `frame/frame.py` (`STACK_SPACING`).
 
 **Stacking.** All the show boards stack on the same 30.5 mm M3 pattern with
 rubber standoffs between them: unplated 3.3 mm holes at ±15.25 mm, each with
-a 7.5 mm copper-free circle (the project spec asks for at least 6.9 mm), and every part is on the top side, so the bottom is flat.
+a 7.5 mm copper-free circle (the project spec asks for at least 6.9 mm), and every part is on the top side, so the bottom is flat (the only things on
+the bottom are the bare SWD debug pads).
 
 **What changed from OpenFC-Lite.** The analog OSD chain, 10 V VTX rail and
 VTX/camera connectors are gone (a show drone has no video). Added: a second
@@ -66,10 +68,17 @@ Pin 1 is marked on the silkscreen. "Out" is from the FC.
 | J5 LIGHT (GH 8) | 1 +5V, 2 TX out, 3 RX in, 4 CTS in, 5 RTS out, 6 LED data out (47 R), 7 GPIO, 8 GND |
 | J6 RC (GH 4) | 1 +5V, 2 TX out, 3 RX in, 4 GND (CRSF/SBUS, PIO UART) |
 | J8 SWD (SH 3, Raspberry Pi debug pinout) | 1 SWCLK, 2 GND, 3 SWDIO |
+| SWD debug pads (bottom, TP14-TP18) | 1 mm round pads at 2.54 mm pitch along the right edge behind J8, labelled on the bottom silkscreen. Top to bottom (J8 end first): SWDIO, GND, SWCLK, 3V3, RUN |
 | J1 USB-C | Device, full speed. Powers the logic (not the 5 V ports) through D5 |
 
 Pads: TP1 VBAT, TP2/TP4/TP11 GND, TP3 +5V, TP10 +3V3, TP5/TP6 buzzer (+5V and
 low side), TP7/TP8 AUX5/AUX6 (PWM), TP9 GPS PPS in, TP12/TP13 TELEM2 TX/RX.
+
+Debug pads (bottom side, for a pogo-pin jig or a clip when the JST cable is
+not handy): TP14 SWDIO, TP15 GND, TP16 SWCLK, TP17 3V3, TP18 RUN. 3V3 is the
+board's own rail: power the board from USB or the battery, and do not feed
+3.3 V in from the debugger. RUN is the RP2354B reset (low = reset), the same
+net as SW2.
 
 ## GPIO map
 
@@ -93,7 +102,7 @@ QSPI_SS is the BOOTSEL button (SW1). SW2 is reset (RUN).
 
 | Path | What |
 |---|---|
-| `show-fc.kicad_pro`, `.kicad_sch`, `.kicad_pcb` | The KiCad project (KiCad 7 format; KiCad 8-10 open and upgrade it) |
+| `show-fc.kicad_pro`, `.kicad_sch`, `.kicad_pcb` | The KiCad project, saved in KiCad 10 format (KiCad 9 and older cannot open it) |
 | `show-fc.kicad_dru` | PCBWay rules by name, plus board rules |
 | `showfc.kicad_sym`, `showfc.pretty/` | Project symbols and the three footprints KiCad's library lacks |
 | `tools/design.py` | **The circuit**: every part, footprint, order code and net |
@@ -106,10 +115,17 @@ QSPI_SS is the BOOTSEL button (SW1). SW2 is reset (RUN).
 | `tools/make_fab.py` | Gerbers, drill, pick-and-place and the PCBWay BOM into `fab/` |
 | `fab/` | What you upload to PCBWay |
 
-The schematic and placement are generated. To change the circuit, edit
-`design.py` and re-run; to change placement, edit `make_board.py`. The routed
-`show-fc.kicad_pcb` is not reproducible (Freerouting gives a different result
-each run), so treat it as the master copy from here on and finish it by hand:
+The schematic is generated: to change the circuit, edit `design.py` and
+re-run `make_schematic.py`. The board is not: `show-fc.kicad_pcb` was routed
+by Freerouting and then finished by hand in KiCad 10 (the last four tracks,
+the SWD pads, R16 and R17 swapped so the divider's VBAT pad sits next to C24),
+so it is the master copy. Edit it in KiCad; re-running `make_board.py` or
+`route.py` starts again from an unrouted board and throws that work away. Two
+of the hand-finished tracks are long because the middle of the board is full:
+BUZZER and RUN (to the SWD pads) run around the mounting holes on the bottom
+layer. Both are slow signals, so the length does not matter.
+
+The original from-scratch pipeline, for reference:
 
 ```sh
 cd hardware/flight-controller/tools
@@ -123,23 +139,6 @@ python3 make_fab.py
 The scripts need KiCad's Python (`pcbnew`) and `kicad-cli`, Java 17+ and
 [Freerouting 1.9](https://github.com/freerouting/freerouting/releases/tag/v1.9.0)
 (`FREEROUTING_JAR`).
-
-## Finishing the routing
-
-Open `show-fc.kicad_pcb` in KiCad, press **X** (route track) with the
-push-and-shove router, and connect these four. The ratsnest lines show them:
-
-| Net | From | To | Note |
-|---|---|---|---|
-| BUZZER | U1 pin 27 (GPIO26) | R34 pin 1 | buzzer FET gate resistor, bottom left |
-| XOUT | U1 pin 31 | R2 pin 1 | 1 k crystal series resistor, keep it short |
-| USB_DP | U1 pin 67 | R9 pin 2 | 27 R USB series resistor, run it beside USB_DM |
-| VBAT | R16 pin 1 (battery divider) | the VBAT track near C24 | thin is fine, it is only the ADC divider |
-
-If one will not fit, moving the small part (R34, R2, R9 or R16) a millimetre
-usually opens a path. Then refill the zones (B), run DRC and regenerate `fab/`
-with `make_fab.py`. Two short dangling stubs (USB_DP_C near J1, BUCK_CB near
-U3) can be deleted.
 
 ## Ordering at PCBWay
 
@@ -158,10 +157,10 @@ These are the things I could not verify from here:
    `showfc.pretty/Infineon_VLGA-8_2.0x2.5mm_P0.65mm` with the current DPS368
    datasheet. The DPS310 is pin-compatible but marked not recommended for new
    designs, so the BOM uses the DPS368.
-2. **ERC and DRC in KiCad 10.** The cloud machine had KiCad 7, whose
-   `kicad-cli` has no ERC. Run both on your Mac:
-   `kicad-cli sch erc show-fc.kicad_sch` and
-   `kicad-cli pcb drc --schematic-parity --refill-zones show-fc.kicad_pcb`.
+2. **ERC and DRC.** Both pass in KiCad 10.0.5
+   (`kicad-cli sch erc show-fc.kicad_sch` and
+   `kicad-cli pcb drc --schematic-parity --refill-zones show-fc.kicad_pcb`).
+   Re-run them after any edit.
 3. **Connector direction.** The JST and USB-C footprints face out of the
    board edges; check the plug side against the frame before ordering.
 4. **The core-regulator inductor (L1).** The RP2350 datasheet asks for the
