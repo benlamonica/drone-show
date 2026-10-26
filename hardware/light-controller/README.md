@@ -12,7 +12,7 @@ Cree XP-E2 LEDs (3 red, 3 green, 3 blue, 3 white) straight from a 4S-6S pack.
 | LEDs | 12 x XP-E2 on the bottom side, facing the diffuser |
 | Input | 4S-6S (12-26 V), reverse-polarity P-FET, SMBJ26A TVS |
 | Logic supply | LMR51420 buck to 3.3 V |
-| Interfaces | JST-SH UART to the flight controller, vertical JST-SH SWD, 4 test pads |
+| Interfaces | JST-SH UART to the flight controller, SWD and spares on 7 pogo-pin test pads |
 | Board | 2 layers, 1.6 mm, 1 oz, smallest passive 0603, PCBWay standard rules |
 
 ## Files
@@ -80,14 +80,25 @@ Because the radio uses the Pico 2 W pins, the stock `pico2_w` board definition a
 `WL_GPIO0` LED (`cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, ...)`) as on a Pico 2 W, or
 the main LEDs themselves. GPIO 4-7, 12-15, 17-22 and 28 are unconnected.
 
-## Programming: no USB
+## Programming: pogo pins, no connectors
 
-USB-C and the BOOTSEL button were left off to make room for a 2-layer layout. Program
-the first time over SWD (JST-SH `J3`, the Raspberry Pi Debug Probe pinout and cable fit
-directly: `openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg`). `J3` is a
-vertical connector on the bottom, so the probe cable plugs straight in from below,
-with the diffuser off, and clears the parts around it. After that the
-firmware can update itself over Wi-Fi. `RUN` is on TP1 if you need a hard reset.
+USB-C, the BOOTSEL button and the SWD connector were left off. All seven test pads sit in
+one row on the bottom, 1.5 mm pads at 2.6 mm pitch along y = -13.4 mm, so one pogo-pin
+jig reaches them all:
+
+| Pad | x (mm) | Net |
+|---|---|---|
+| TP4 | -25.4 | GPIO16 |
+| TP3 | -22.8 | GPIO11 |
+| TP2 | -20.2 | GPIO10 |
+| TP1 | -17.6 | RUN |
+| TP5 | -15.0 | SWCLK |
+| TP6 | -12.4 | GND |
+| TP7 | -9.8 | SWDIO |
+
+For the first flash, power the board from the pack and hold a Raspberry Pi Debug Probe
+on TP5-TP7 (`openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg`). After that,
+update the firmware over the flight controller UART or Wi-Fi.
 
 ## Firmware port from the existing `pico/` code
 
@@ -130,7 +141,7 @@ PCBWay's standard 6/6 mil, 0.3 mm process.
 ## PCBWay order settings
 
 2 layers, FR-4, 1.6 mm, 1 oz outer copper, HASL lead-free or ENIG, min track/space
-6/6 mil, min hole 0.3 mm. Assembly on both sides (LEDs, flash, buck, SWD and a few
+6/6 mil, min hole 0.3 mm. Assembly on both sides (LEDs, flash, buck and a few
 passives are on the bottom). Battery leads are soldered by hand to `J1`.
 
 ## Main parts

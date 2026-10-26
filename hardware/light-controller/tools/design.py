@@ -75,7 +75,6 @@ F = {
     "L2016": "L_Abracon_AOTA-B201610", "QFN60": "RP2350A_QFN-60_7x7mm_P0.4mm",
     "RM2": "RPi_RM2", "XPE2": "LED_Cree-XP",
     "SH3": "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal",
-    "SH3V": "JST_SH_BM03B-SRSS-TB_1x03-1MP_P1.00mm_Vertical",
     "WIRE2": "SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm",
     "TP": "TestPoint_Pad_D1.5mm",
 }
@@ -200,16 +199,14 @@ add("U3", ("W25Q16", "W25Q16JVSNIQ", "SOIC8", "Winbond", "W25Q16JVSNIQ"),
 add("C29", "100n", two("+3V3", "GND"), B)
 add("R11", "10k", two("+3V3", "RUN"), B)
 
-# --- SWD, FC UART, test pads (no USB: program over SWD, then over Wi-Fi) -------------------------------------------------------
+# --- FC UART, SWD and test pads (no USB or SWD connector: program through pogo pins, then over UART or Wi-Fi) -------------------------------------------------------
 B = "io"
-# vertical: on the bottom, the probe cable plugs straight in from below, clear of other parts
-add("J3", ("Conn_1x03", "SWD", "SH3V", "JST", "BM03B-SRSS-TB(LF)(SN)"),
-    {"1": "SWCLK", "2": "GND", "3": "SWDIO", "MP": "GND"}, B)
 add("J4", ("Conn_1x03", "UART to FC", "SH3", "JST", "SM03B-SRSS-TB(LF)(SN)"),
     {"1": "UART_TX_C", "2": "UART_RX_C", "3": "GND", "MP": "GND"}, B)
 add("R16", "100R", two("UART_TX", "UART_TX_C"), B)
 add("R17", "100R", two("UART_RX_C", "UART_RX"), B)
-for i, net in enumerate(("RUN", "GPIO10", "GPIO11", "GPIO16")):
+# one row of pads on the bottom at 2.6 mm pitch, SWD included: program with a pogo-pin jig
+for i, net in enumerate(("RUN", "GPIO10", "GPIO11", "GPIO16", "SWCLK", "GND", "SWDIO")):
     add(f"TP{i + 1}", ("TestPoint", net, "TP", "-", "test pad"), {"1": net}, B)
 
 # --- RM2 radio -------------------------------------------------------------------------
