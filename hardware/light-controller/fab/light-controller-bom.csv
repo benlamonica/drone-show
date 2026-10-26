@@ -1,0 +1,43 @@
+Item #,Designator,Qty,Manufacturer,Mfg Part #,Description / Value,Package/Footprint,Type,Your Instructions / Notes
+1,J1,1,-,solder 20 AWG leads,BATT 4S-6S,SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm,THT/SMD,Do not place: battery leads soldered by hand
+2,Q1,1,Diodes Inc,DMP6023LE-13,DMP6023LE,SOT-223-3_TabPin2,SMD,
+3,D1,1,Diodes Inc,BZT52C12-7-F,12V,D_SOD-123,SMD,
+4,R1 R2 R4 R5,4,Yageo,RC0603FR-07100KL,100k,R_0603_1608Metric,SMD,
+5,D2,1,Littelfuse,SMBJ26A,SMBJ26A,D_SMB,SMD,
+6,C1 C2 C3 C6 C41 C42 C43 C44,8,Murata,GRM31CR71H475KA12L,4.7uF 50V X7R,C_1206_3216Metric,SMD,
+7,C4 C5 C7 C8 C11 C12 C13 C14 C15 C16 C17 C18 C19 C23 C24 C25 C29 C32 C33 C34,20,Murata,GRM188R71H104KA93D,100nF 50V X7R,C_0603_1608Metric,SMD,
+8,R3 R11 R20 R22 R51 R52 R53 R54,8,Yageo,RC0603FR-0710KL,10k,R_0603_1608Metric,SMD,
+9,U1,1,Texas Instruments,LMR51420YDDCR,LMR51420YDDCR,SOT-23-6,SMD,
+10,L1,1,Coilcraft,XAL4020-682MEC,6.8uH 3.6A,L_Coilcraft_XAL4020-XXX,SMD,
+11,R6,1,Yageo,RC0603FR-0722K1L,22.1k,R_0603_1608Metric,SMD,
+12,C9 C10,2,Murata,GRM21BR61A226ME44L,22uF 10V X5R,C_0805_2012Metric,SMD,
+13,U2,1,Raspberry Pi,"RP2350A (or RP2354A, then omit U3)",RP2350A,RP2350A_QFN-60_7x7mm_P0.4mm,SMD,
+14,C20 C21 C22,3,Murata,GRM188R61A475KE15D,4.7uF 10V X5R,C_0603_1608Metric,SMD,
+15,R7,1,Yageo,RC0603FR-0733RL,33,R_0603_1608Metric,SMD,
+16,C26 C31,2,Murata,GRM21BR71A106KA73L,10uF 10V X7R,C_0805_2012Metric,SMD,
+17,L2,1,Abracon,AOTA-B201610S3R3-101-T,3.3uH,L_Abracon_AOTA-B201610,SMD,
+18,Y1,1,Abracon,ABM8-272-T3,12MHz,Crystal_SMD_3225-4Pin_3.2x2.5mm,SMD,
+19,R8 R19 R41 R42 R43 R44,6,Yageo,RC0603FR-071KL,1k,R_0603_1608Metric,SMD,
+20,C27 C28,2,Murata,GRM1885C1H150JA01D,15pF 50V C0G,C_0603_1608Metric,SMD,
+21,U3,1,Winbond,W25Q16JVSNIQ,W25Q16JVSNIQ,SOIC-8_3.9x4.9mm_P1.27mm,SMD,
+22,J4,1,JST,SM03B-SRSS-TB(LF)(SN),UART to FC,JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal,SMD,
+23,R16 R17,2,Yageo,RC0603FR-07100RL,100,R_0603_1608Metric,SMD,
+24,TP1,1,-,test pad,RUN,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+25,TP2,1,-,test pad,GPIO10,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+26,TP3,1,-,test pad,GPIO11,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+27,TP4,1,-,test pad,GPIO16,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+28,TP5,1,-,test pad,SWCLK,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+29,TP6,1,-,test pad,GND,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+30,TP7,1,-,test pad,SWDIO,TestPoint_Pad_D1.5mm,SMD,"Bare pad, nothing to place"
+31,M1,1,Raspberry Pi,SC1169 (Radio Module 2),RM2,RPi_RM2,SMD,
+32,R18,1,Yageo,RC0603FR-07470RL,470,R_0603_1608Metric,SMD,
+33,D4,1,Wurth Elektronik,150060GS75000,green,LED_0603_1608Metric,SMD,
+34,TH1,1,Murata,NCP18XH103F03RB,10k B3380,R_0603_1608Metric,SMD,
+35,U5 U6 U7 U8,4,Diodes Inc,AL8860MP-13,AL8860MP-13,MSOP-8-1EP_3x3mm_P0.65mm_EP1.68x1.88mm,SMD,
+36,R31 R32 R33 R34,4,Vishay Dale,WSL1206R1500FEA,0.15 1% 0.25W,R_1206_3216Metric,SMD,
+37,L3 L4 L5 L6,4,Bourns,SRN6028-470M,47uH 0.92A,L_Bourns-SRN6028,SMD,
+38,D6 D7 D8 D9,4,Diodes Inc,B240A-13-F,B240A,D_SMA,SMD,
+39,LED1 LED2 LED3,3,Cree LED,"XPEBRD-L1-0000-00801 (XP-E2 red, any in-stock flux bin)",XP-E2 R,LED_Cree-XP,SMD,Bottom side. Any in-stock flux bin of this colour.
+40,LED4 LED5 LED6,3,Cree LED,XPEBGR-L1-0000-00E01 (XP-E2 green),XP-E2 G,LED_Cree-XP,SMD,Bottom side. Any in-stock flux bin of this colour.
+41,LED7 LED8 LED9,3,Cree LED,"XPEBBL-L1-0000-00Y01 (XP-E2 blue, any in-stock flux bin)",XP-E2 B,LED_Cree-XP,SMD,Bottom side. Any in-stock flux bin of this colour.
+42,LED10 LED11 LED12,3,Cree LED,XPEBWT-L1-0000-00D50 (XP-E2 cool white),XP-E2 W,LED_Cree-XP,SMD,Bottom side. Any in-stock flux bin of this colour.
