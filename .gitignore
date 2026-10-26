@@ -1,4 +1,7 @@
 ntrip-env
 build
 .vscode
+__pycache__/
+*.pyc
+hardware/flight-controller/tools/logs/
 .DS_Store

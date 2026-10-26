@@ -307,6 +307,10 @@ for i, (net, size) in enumerate([("VBAT", "1.5"), ("GND", "1.5"), ("+5V", "1.5")
                                  ("GPS_PPS", "1.5"), ("+3V3", "1.5"), ("GND", "1.5"),
                                  ("TEL2_TX", "1.5"), ("TEL2_RX", "1.5")]):
     TP(f"TP{1 + i}", net, G, size)
+# SWD debug pads, bottom side next to J8, for a pogo-pin or clip debugger
+# without the JST cable
+for i, net in enumerate(["SWDIO", "GND", "SWCLK", "+3V3", "RUN"]):
+    TP(f"TP{14 + i}", net, G, "1.0", note="SWD debug pad, bottom side")
 
 # Mounting holes, 30.5 mm stack (frame STACK_SPACING), isolated
 for i in range(4):
