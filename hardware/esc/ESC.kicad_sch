@@ -5770,7 +5770,7 @@
 
 (property "Value" "10k" (at 234.95 96.52 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 234.95 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 234.95 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 237.236 99.187 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -5788,7 +5788,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "b499fe88-fc6e-48a3-a274-9b480187f9f6")) (pin "1" (uuid "0b365f00-2520-4fbe-8043-084d979639de")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R69") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R15") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R51") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R30") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "b499fe88-fc6e-48a3-a274-9b480187f9f6")) (pin "1" (uuid "0b365f00-2520-4fbe-8043-084d979639de")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R69") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R15") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R51") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R30") (unit 1))))) 
 
 (symbol (lib_id "PCM_Transistor_MOSFET_AKL:2N6660") (at 96.52 146.05 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "033c7673-57ac-41af-8f1c-ce889c33151d") 
 
@@ -5824,7 +5824,7 @@
 
 (property "Value" "10R" (at 69.85 29.21 90) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 69.85 34.798 90) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 69.85 34.798 90) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
 (property "Datasheet" "" (at 69.85 33.02 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
@@ -5842,7 +5842,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710RL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "6910cd22-a107-4959-8022-d96dcec74f5e")) (pin "1" (uuid "638e424e-4b57-4f8c-8103-c9268c407b22")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R88") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R85") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R86") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R84") (unit 1))))) 
+(property "MPN" "RC0402FR-0710RL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "6910cd22-a107-4959-8022-d96dcec74f5e")) (pin "1" (uuid "638e424e-4b57-4f8c-8103-c9268c407b22")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R88") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R85") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R86") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R84") (unit 1))))) 
 
 (symbol (lib_id "ESCLibrary:0201_220R") (at 48.26 80.01 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "1095642b-f6cf-41ff-9cc1-f98d0f5d8dfc") 
 
@@ -5850,7 +5850,7 @@
 
 (property "Value" "220R" (at 48.26 82.55 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 48.26 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 48.26 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 45.974 79.883 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -5868,7 +5868,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-07220RL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "92e83bba-bcee-44a9-953c-fcdaaf0dc82f")) (pin "1" (uuid "a33833dd-f0ea-45a7-b334-5f97fa2cad7a")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R87") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R39") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R57") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R20") (unit 1))))) 
+(property "MPN" "RC0402FR-07220RL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "92e83bba-bcee-44a9-953c-fcdaaf0dc82f")) (pin "1" (uuid "a33833dd-f0ea-45a7-b334-5f97fa2cad7a")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R87") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R39") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R57") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R20") (unit 1))))) 
 
 (symbol (lib_id "PCM_Resistor_AKL:R_0402") (at 149.86 161.29 90) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (uuid "161b600e-22e3-4e86-97fa-732c03e52d0f") 
 
@@ -5968,7 +5968,7 @@
 
 (property "Value" "1k" (at 232.41 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 240.03 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 240.03 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 229.743 114.046 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -5986,7 +5986,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "4916948a-4058-42e1-b7c8-46439a51fb08")) (pin "1" (uuid "bb476a12-3033-46b1-8d44-57a9298b8122")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R68") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R14") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R50") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R29") (unit 1))))) 
+(property "MPN" "RC0402FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "4916948a-4058-42e1-b7c8-46439a51fb08")) (pin "1" (uuid "bb476a12-3033-46b1-8d44-57a9298b8122")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R68") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R14") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R50") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R29") (unit 1))))) 
 
 (symbol (lib_id "power:GND") (at 39.37 170.18 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "27b20d01-8951-4b8a-9fbb-5f65eb3a72cb") 
 
@@ -6144,7 +6144,7 @@
 
 (property "Value" "10k" (at 208.28 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 215.9 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 215.9 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 205.613 92.456 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6162,7 +6162,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "74d812c6-7c21-4767-b5a1-19b932e6f0f6")) (pin "1" (uuid "08fafc4b-884a-442a-8c1d-005f4acbc2a1")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R64") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R10") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R46") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R25") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "74d812c6-7c21-4767-b5a1-19b932e6f0f6")) (pin "1" (uuid "08fafc4b-884a-442a-8c1d-005f4acbc2a1")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R64") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R10") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R46") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R25") (unit 1))))) 
 
 (symbol (lib_id "power:GND") (at 186.69 30.48 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (uuid "3dbe3057-153e-4838-9105-e8845770de56") 
 
@@ -6206,7 +6206,7 @@
 
 (property "Value" "10k" (at 33.02 60.96 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 33.02 53.34 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 33.02 53.34 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 35.306 63.627 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6224,7 +6224,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "64cf62f5-b34b-4328-97f8-f898ad6ebc59")) (pin "1" (uuid "670717a0-87e1-4ad9-aa89-5d9b85638658")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R58") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R21") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R40") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R18") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "64cf62f5-b34b-4328-97f8-f898ad6ebc59")) (pin "1" (uuid "670717a0-87e1-4ad9-aa89-5d9b85638658")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R58") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R21") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R40") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R18") (unit 1))))) 
 
 (symbol (lib_id "components:0201_10kR") (at 210.82 99.06 180) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "45a65dcf-d4e0-4466-b87e-77261c8d9a31") 
 
@@ -6232,7 +6232,7 @@
 
 (property "Value" "10k" (at 210.82 96.52 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 210.82 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 210.82 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 213.106 99.187 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6250,7 +6250,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "a5749d95-0f37-4d29-be23-f0375e839683")) (pin "1" (uuid "0dd9741b-87e9-4c32-a302-2058597bc5fc")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R66") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R12") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R48") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R27") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "a5749d95-0f37-4d29-be23-f0375e839683")) (pin "1" (uuid "0dd9741b-87e9-4c32-a302-2058597bc5fc")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R66") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R12") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R48") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R27") (unit 1))))) 
 
 (symbol (lib_id "components:0201_10kR") (at 259.08 99.06 180) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "4dcb51a7-8f21-4346-bfe7-f0ca37ca8014") 
 
@@ -6258,7 +6258,7 @@
 
 (property "Value" "10k" (at 259.08 96.52 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 259.08 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 259.08 88.9 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 261.366 99.187 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6276,7 +6276,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "b37674c6-8e01-4640-8458-b3c308ad2131")) (pin "1" (uuid "7993368d-dfdc-44b1-bddc-480621618751")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R72") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R36") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R54") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R33") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "b37674c6-8e01-4640-8458-b3c308ad2131")) (pin "1" (uuid "7993368d-dfdc-44b1-bddc-480621618751")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R72") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R36") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R54") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R33") (unit 1))))) 
 
 (symbol (lib_id "components:0201_1kR") (at 205.74 111.76 90) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "50c60d97-4209-47ee-a259-e385d2b100a6") 
 
@@ -6284,7 +6284,7 @@
 
 (property "Value" "1k" (at 208.28 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 215.9 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 215.9 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 205.613 114.046 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6302,7 +6302,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "d663e2d5-0543-4a0f-85fa-9a7e142da25d")) (pin "1" (uuid "b1f48db4-6d04-4832-8b81-007487b8b513")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R65") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R11") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R47") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R26") (unit 1))))) 
+(property "MPN" "RC0402FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "d663e2d5-0543-4a0f-85fa-9a7e142da25d")) (pin "1" (uuid "b1f48db4-6d04-4832-8b81-007487b8b513")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R65") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R11") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R47") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R26") (unit 1))))) 
 
 (symbol (lib_id "components:0201_10kR") (at 254 90.17 270) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "5d777ac9-ee6a-4111-baf4-d69234a742df") 
 
@@ -6310,7 +6310,7 @@
 
 (property "Value" "10k" (at 251.46 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 243.84 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 243.84 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 254.127 87.884 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6328,7 +6328,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "5b555c7d-e3cc-4362-a5e5-bf3a81acdf1b")) (pin "1" (uuid "52ced202-f085-4c12-9c77-333d65b38a4e")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R70") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R34") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R52") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R31") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "5b555c7d-e3cc-4362-a5e5-bf3a81acdf1b")) (pin "1" (uuid "52ced202-f085-4c12-9c77-333d65b38a4e")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R70") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R34") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R52") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R31") (unit 1))))) 
 
 (symbol (lib_id "power:+3V3") (at 91.44 33.02 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "626f7610-a3f2-47c5-9816-f47c804ae5c6") 
 
@@ -6374,7 +6374,7 @@
 
 (property "Value" "10k" (at 227.33 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 219.71 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 219.71 90.17 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 229.997 87.884 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6392,7 +6392,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "abaa52d0-c18b-46ce-baca-335dda06af37")) (pin "1" (uuid "ba430ca6-4fcf-446e-a27b-ca8c00ff17f5")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R67") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R13") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R49") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R28") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "abaa52d0-c18b-46ce-baca-335dda06af37")) (pin "1" (uuid "ba430ca6-4fcf-446e-a27b-ca8c00ff17f5")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R67") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R13") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R49") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R28") (unit 1))))) 
 
 (symbol (lib_id "power:GND") (at 121.92 50.8 270) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (uuid "67515225-fbe3-4bf4-b24b-06d9d9ab6ad0") 
 
@@ -6594,7 +6594,7 @@
 
 (property "Value" "100nF" (at 80.01 37.592 90) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify right))) 
 
-(property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (at 72.39 36.83 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 72.39 36.83 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "" (at 82.677 34.544 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6612,7 +6612,7 @@
 
 (property "Manufacturer" "Samsung" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "CL10B104KB8NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "a48214d0-85ff-4c8f-ab6f-0bed22175c55")) (pin "2" (uuid "7ab77e73-d144-458b-8b4e-a4e0de58627d")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C66") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C55") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C61") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C49") (unit 1))))) 
+(property "MPN" "CL05B104KB5NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "a48214d0-85ff-4c8f-ab6f-0bed22175c55")) (pin "2" (uuid "7ab77e73-d144-458b-8b4e-a4e0de58627d")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C66") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C55") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C61") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C49") (unit 1))))) 
 
 (symbol (lib_id "components:0201_1kR") (at 254 111.76 90) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "b7f2632a-37c3-45ff-83c3-f9088547e792") 
 
@@ -6620,7 +6620,7 @@
 
 (property "Value" "1k" (at 256.54 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 264.16 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 264.16 111.76 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 253.873 114.046 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6638,7 +6638,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "15ac97e8-78cb-457a-84f7-1d325931ceba")) (pin "1" (uuid "e4305f1b-28bf-4871-a1d9-12f844efe167")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R71") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R35") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R53") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R32") (unit 1))))) 
+(property "MPN" "RC0402FR-071KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "15ac97e8-78cb-457a-84f7-1d325931ceba")) (pin "1" (uuid "e4305f1b-28bf-4871-a1d9-12f844efe167")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R71") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R35") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R53") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R32") (unit 1))))) 
 
 (symbol (lib_id "power:GND") (at 229.87 116.84 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "bced1852-aff7-4a36-8611-bd5bceac7e1d") 
 
@@ -6658,7 +6658,7 @@
 
 (property "Value" "100nF" (at 38.608 70.612 0) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify right))) 
 
-(property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (at 34.29 67.31 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 34.29 67.31 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "" (at 44.577 65.024 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6676,7 +6676,7 @@
 
 (property "Manufacturer" "Samsung" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "CL10B104KB8NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "859acc8e-c421-4f94-a130-06bedfe37eab")) (pin "2" (uuid "504d26c5-dfc8-4757-8262-6c7fb1022d2f")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C64") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C52") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C59") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C50") (unit 1))))) 
+(property "MPN" "CL05B104KB5NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "859acc8e-c421-4f94-a130-06bedfe37eab")) (pin "2" (uuid "504d26c5-dfc8-4757-8262-6c7fb1022d2f")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C64") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C52") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C59") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C50") (unit 1))))) 
 
 (symbol (lib_id "Connector:TestPoint") (at 33.02 74.93 90) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom no) (on_board yes) (in_pos_files yes) (dnp no) (uuid "c8aab67f-6736-4b9c-acf3-aa9e0f30627f") 
 
@@ -6696,7 +6696,7 @@
 
 (property "Value" "100nF" (at 55.118 40.132 0) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify right))) 
 
-(property "Footprint" "Capacitor_SMD:C_0603_1608Metric" (at 50.8 36.83 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Capacitor_SMD:C_0402_1005Metric" (at 50.8 36.83 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "" (at 61.087 34.544 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6714,7 +6714,7 @@
 
 (property "Manufacturer" "Samsung" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "CL10B104KB8NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "fbdb8524-3585-4ddc-9113-62b82502ffaa")) (pin "2" (uuid "a001d54c-87f2-4c66-9f19-136149c61646")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C65") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C54") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C60") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C48") (unit 1))))) 
+(property "MPN" "CL05B104KB5NNNC" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "1" (uuid "fbdb8524-3585-4ddc-9113-62b82502ffaa")) (pin "2" (uuid "a001d54c-87f2-4c66-9f19-136149c61646")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "C65") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "C54") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "C60") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "C48") (unit 1))))) 
 
 (symbol (lib_id "power:+12V") (at 186.69 22.86 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "df9aedf3-2ac2-4a5c-aa53-fe9e746478c4") 
 
@@ -6774,7 +6774,7 @@
 
 (property "Value" "10k" (at 48.26 58.42 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 48.26 50.8 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
+(property "Footprint" "Resistor_SMD:R_0402_1005Metric" (at 48.26 50.8 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27) (italic yes)))) 
 
 (property "Datasheet" "https://item.szlcsc.com/239136.html" (at 50.546 61.087 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
@@ -6792,7 +6792,7 @@
 
 (property "Manufacturer" "YAGEO" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "RC0603FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "d68dbf5c-9891-4d0b-86b8-464462cfc0be")) (pin "1" (uuid "fda24584-8880-4480-acb1-f54359ccdbd2")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R59") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R22") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R41") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R19") (unit 1))))) 
+(property "MPN" "RC0402FR-0710KL" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "2" (uuid "d68dbf5c-9891-4d0b-86b8-464462cfc0be")) (pin "1" (uuid "fda24584-8880-4480-acb1-f54359ccdbd2")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81/0f1ac7ef-71be-4cf4-81ac-90268323e1b3" (reference "R59") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/3fa70197-fd52-4922-8368-62c7feb267b9" (reference "R22") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/6061fcc0-8b26-44e0-b078-a202b47fdd16" (reference "R41") (unit 1)) (path "/612d09d9-c556-41af-8a15-92be360f8e81/f870c78f-43b6-4f66-afe4-21d85c4907b1" (reference "R19") (unit 1))))) 
 
 (symbol (lib_id "power:GND") (at 160.02 170.18 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no) (fields_autoplaced yes) (uuid "f3d0f2cb-b08e-4f62-8fe2-1bea57687fc8") 
 

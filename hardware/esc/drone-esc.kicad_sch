@@ -7118,15 +7118,15 @@
 
 (property "Reference" "J1" (at 356.87 59.6899 0) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
-(property "Value" "BM08B-SRSS-TB" (at 356.87 62.2299 0) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
+(property "Value" "SM08B-SRSS-TB" (at 356.87 62.2299 0) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)) (justify left))) 
 
-(property "Footprint" "drone-esc:JST_SH_BM08B-SRSS-TB_Vertical" (at 347.98 82.55 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
+(property "Footprint" "drone-esc:JST_SH_SM08B-SRSS-TB_Horizontal" (at 347.98 82.55 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
 (property "Datasheet" "https://www.jst-mfg.com/product/pdf/eng/eSR.pdf" (at 347.98 85.09 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
 (property "Description" "JST SH series 8-pin 1.0mm pitch SMD connector, Betaflight standard" (at 347.98 59.69 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "LCSC" "C160390" (at 347.98 87.63 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
+(property "LCSC" "C160407" (at 347.98 87.63 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
 (property "Farnell" "" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
@@ -7138,7 +7138,7 @@
 
 (property "Manufacturer" "JST" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) 
 
-(property "MPN" "BM08B-SRSS-TB(LF)(SN)" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "5" (uuid "b8ba26e8-b827-40b4-937b-76c4a20a28c9")) (pin "4" (uuid "62b77f89-22ad-4b6a-bccf-9ed7b9b6dd88")) (pin "3" (uuid "802d810b-ba43-473a-aeb1-239e21271376")) (pin "2" (uuid "440db9df-dcdc-4d5e-849c-57ba3c140ad3")) (pin "1" (uuid "addf65a1-79a2-471d-bf92-cef800b7a35c")) (pin "P1" (uuid "2042d570-d433-4789-971f-975d3890f725")) (pin "6" (uuid "6e7d9bc3-d09d-4929-873d-d2f405a8b5a3")) (pin "7" (uuid "3d26ce92-cd73-4fe7-8a5b-a7b9ca884e20")) (pin "8" (uuid "ce1d9ffe-53b8-4f0c-8adf-8c9d7ebd7edb")) (pin "P2" (uuid "f9961b10-99f7-4227-b438-b198d4a40c9c")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81" (reference "J1") (unit 1)))) 
+(property "MPN" "SM08B-SRSS-TB(LF)(SN)" (at 0 0 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27)))) (pin "5" (uuid "b8ba26e8-b827-40b4-937b-76c4a20a28c9")) (pin "4" (uuid "62b77f89-22ad-4b6a-bccf-9ed7b9b6dd88")) (pin "3" (uuid "802d810b-ba43-473a-aeb1-239e21271376")) (pin "2" (uuid "440db9df-dcdc-4d5e-849c-57ba3c140ad3")) (pin "1" (uuid "addf65a1-79a2-471d-bf92-cef800b7a35c")) (pin "P1" (uuid "2042d570-d433-4789-971f-975d3890f725")) (pin "6" (uuid "6e7d9bc3-d09d-4929-873d-d2f405a8b5a3")) (pin "7" (uuid "3d26ce92-cd73-4fe7-8a5b-a7b9ca884e20")) (pin "8" (uuid "ce1d9ffe-53b8-4f0c-8adf-8c9d7ebd7edb")) (pin "P2" (uuid "f9961b10-99f7-4227-b438-b198d4a40c9c")) (instances (project "drone-esc" (path "/612d09d9-c556-41af-8a15-92be360f8e81" (reference "J1") (unit 1)))) 
 
 (property "FT Position Offset" "0,2.835" (at 347.98 87.63 0) (hide yes) (show_name no) (do_not_autoplace no) (effects (font (size 1.27 1.27))))) 
 
