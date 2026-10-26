@@ -12,7 +12,7 @@ Cree XP-E2 LEDs (3 red, 3 green, 3 blue, 3 white) straight from a 4S-6S pack.
 | LEDs | 12 x XP-E2 on the bottom side, facing the diffuser |
 | Input | 4S-6S (12-26 V), reverse-polarity P-FET, SMBJ26A TVS |
 | Logic supply | LMR51420 buck to 3.3 V |
-| Interfaces | JST-SH UART to the flight controller, JST-SH SWD, 4 test pads |
+| Interfaces | JST-SH UART to the flight controller, vertical JST-SH SWD, 4 test pads |
 | Board | 2 layers, 1.6 mm, 1 oz, smallest passive 0603, PCBWay standard rules |
 
 ## Files
@@ -84,7 +84,9 @@ the main LEDs themselves. GPIO 4-7, 12-15, 17-22 and 28 are unconnected.
 
 USB-C and the BOOTSEL button were left off to make room for a 2-layer layout. Program
 the first time over SWD (JST-SH `J3`, the Raspberry Pi Debug Probe pinout and cable fit
-directly: `openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg`). After that the
+directly: `openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg`). `J3` is a
+vertical connector on the bottom, so the probe cable plugs straight in from below,
+with the diffuser off, and clears the parts around it. After that the
 firmware can update itself over Wi-Fi. `RUN` is on TP1 if you need a hard reset.
 
 ## Firmware port from the existing `pico/` code
