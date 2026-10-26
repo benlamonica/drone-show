@@ -100,6 +100,11 @@ For the first flash, power the board from the pack and hold a Raspberry Pi Debug
 on TP5-TP7 (`openocd -f interface/cmsis-dap.cfg -f target/rp2350.cfg`). After that,
 update the firmware over the flight controller UART or Wi-Fi.
 
+Planned, not built yet: field updates use the RP2350 boot ROM's two-slot (A/B) partition
+table instead of a custom bootloader. The running app receives a new image over the FC
+UART (or Wi-Fi), writes it to the spare slot and reboots. If the new image doesn't
+start, the boot ROM falls back to the old one, so a bad update can't brick a drone.
+
 ## Firmware port from the existing `pico/` code
 
 The current firmware drives a WS2812B/SK6812 strip through `port/led_strip.c`. On this
