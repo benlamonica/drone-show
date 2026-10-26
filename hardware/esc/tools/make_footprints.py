@@ -3,8 +3,8 @@
 * QFN-28 for the AT32F421G8U7: the prototype footprint had pads 8, 23 and 24
   removed. They are restored so every pin is soldered, and the pads are
   narrowed to 0.18 mm so 0.2 mm tracks fit between them.
-* JST SH 8-pin top entry: the stock KiCad footprint names both mounting pads
-  "MP"; the schematic symbol calls them P1 and P2.
+* JST SH 8-pin side entry (SM08B-SRSS-TB): the stock KiCad footprint names
+  both mounting pads "MP"; the schematic symbol calls them P1 and P2.
 * ESC_Pads_Octagon60: battery pads, FC wire pads, mounting holes and motor pads
   in one footprint, matching the pin numbers of the prototype's 4in1ESC symbol.
   Its geometry comes from layout.py so the board script and the footprint agree.
@@ -55,14 +55,14 @@ def fix_qfn28():
     io.FootprintSave(LIB, fp)
 
 
-def jst_vertical():
+def jst_side_entry():
     fp = io.FootprintLoad(os.path.join(STOCK, "Connector_JST.pretty"),
-                          "JST_SH_BM08B-SRSS-TB_1x08-1MP_P1.00mm_Vertical")
+                          "JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal")
     mps = sorted((p for p in fp.Pads() if p.GetNumber() == "MP"),
                  key=lambda p: p.GetFPRelativePosition().x)
     mps[0].SetNumber("P1")
     mps[1].SetNumber("P2")
-    fp.SetFPID(pcbnew.LIB_ID("", "JST_SH_BM08B-SRSS-TB_Vertical"))
+    fp.SetFPID(pcbnew.LIB_ID("", "JST_SH_SM08B-SRSS-TB_Horizontal"))
     io.FootprintSave(LIB, fp)
 
 
@@ -100,10 +100,15 @@ def esc_pads():
     fp.Reference().SetVisible(False)
     fp.Value().SetVisible(False)
     fp.SetAttributes(pcbnew.FP_EXCLUDE_FROM_POS_FILES | pcbnew.FP_EXCLUDE_FROM_BOM)
-    # battery: 1 = battery + (feeds the shunts), 2 = battery -
+    # battery: 1 = battery + (feeds the shunts), 2 = battery -. Plated, bare
+    # on both sides; a ring of small plated holes in each pad carries the
+    # current between the sides whichever side the lead is soldered to.
     for num, (x, y, ang) in L.battery_pads().items():
-        add_pad(fp, num, x, y, L.BATT_PAD_D, L.BATT_PAD_D, drill=L.BATT_PAD_DRILL,
-                shape=pcbnew.PAD_SHAPE_CIRCLE)
+        add_pad(fp, num, x, y, L.BATT_PAD_L, L.BATT_PAD_W, drill=L.BATT_PAD_DRILL, angle=ang)
+        for i in range(8):
+            a = 2 * math.pi * (i + 0.5) / 8
+            add_pad(fp, num, x + L.BATT_VIA_R * math.cos(a), y + L.BATT_VIA_R * math.sin(a),
+                    L.BATT_VIA_D, L.BATT_VIA_D, drill=L.BATT_VIA_DRILL, shape=pcbnew.PAD_SHAPE_CIRCLE)
     # No FC wire pads: the FC plugs into J1, and pads behind the connector
     # sat right over the front channel's gate driver, where the board is
     # most crowded. Pins 3-10 of the symbol are left unplaced.
@@ -137,6 +142,6 @@ def esc_pads():
 
 if __name__ == "__main__":
     fix_qfn28()
-    jst_vertical()
+    jst_side_entry()
     esc_pads()
     print("footprints written to", LIB)

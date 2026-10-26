@@ -1,7 +1,7 @@
 """Board geometry shared by make_footprints.py and build_pcb.py.
 
 All coordinates are mm from the board centre, KiCad screen axes (x right,
-y down). The board is drawn with the FC connector edge (front) up.
+y down). The board is drawn with the front up.
 
 The board is an octagon, 80 mm across the flats: four 26.9 mm axis flats at
 +-40 mm and four corner flats 37.8 mm from the centre. The corners point at the
@@ -11,11 +11,15 @@ README.md).
 Four copper layers: signals and the phase copper on the outside, a solid GND
 plane on In1 and a +BATT pour on In2 that signals may also use.
 
-Each motor channel owns one edge. Its three half-bridges sit in a row along
-that edge: high-side FET on top, low-side FET directly underneath on the
+Each motor channel owns one axis edge. Its three half-bridges sit in a row
+along that edge: high-side FET on top, low-side FET directly underneath on the
 bottom, and the phase copper runs out to a plated motor pad on the edge. The
-channel's MCU and gate driver sit on the bottom in the corner clockwise from
-its edge.
+gate driver sits inboard of the FETs on the bottom and the channel's MCU right
+above it on top, both in the channel's wedge between the centre and the FETs.
+
+The corner flats are free for the connections: the battery pads (soldered
+from both sides, with the bulk electrolytic) on the rear-right corner flat and
+the side-entry FC connector on the front-left one.
 """
 import math
 
@@ -50,10 +54,36 @@ MOTOR_PAD_NUM = {
     ("ESC1", "C"): "21", ("ESC1", "B"): "22", ("ESC1", "A"): "23",
 }
 
-BATT_PAD_D, BATT_PAD_DRILL = 4.6, 2.0   # 14 AWG goes through the hole
-BATT_X, BATT_Y = (-3.0, 4.6), 2.6
+# each channel's MCU and gate driver, both on the bottom, in channel
+# coordinates (x out towards the channel's edge). They are placed exactly, so
+# route_prep.pwm_lines can draw the same PWM escape in every channel.
+MCU_POS = (6.0, 0.0)
+DRV_POS = (11.5, 4.2)
+# vias of the hand-drawn MCU escapes (route_prep.pwm_lines), channel
+# coordinates, so the parts on top can keep clear of them
+MCU_VIAS = {"+3V3": (6.75, 2.8), "NRST": (5.3, -3.4), "vdda": (6.5, -3.9)}
+C3V3_POS = (7.0, 4.3)     # on top, pad 1 (3V3) towards the via
+CVCC_POS = (13.4, 0.4)    # driver supply cap, bottom, +10V pad towards the driver
+RFCA_POS = (8.2, -3.4)    # back-EMF resistor FBA-FBCOMMON, bottom, FBCOMMON pad towards the MCU
+# bootstrap caps A, B, C below the driver; C is higher to clear the
+# mounting hole
+CB_POS = {"A": (9.6, 10.6), "B": (11.6, 10.6), "C": (13.6, 10.0)}
 
-JST_POS = (0.0, -6.4)
+# battery pads on the rear-right corner flat: u along the corner diagonal from
+# the centre, v across it (towards the rear edge). Pad 1 is battery +, pad 2
+# battery -. Each is a big plated pad, bare copper on both sides, so the lead
+# can go on one side and the electrolytic's leg on the other.
+BATT_CORNER = "BR"
+BATT_U = 33.0
+BATT_V = {"1": 1.0, "2": 10.0}
+BATT_PAD_L, BATT_PAD_W = 7.0, 6.0     # along the diagonal, across it
+BATT_PAD_DRILL = 2.2                  # 12 AWG fits through
+BATT_VIA_DRILL, BATT_VIA_D, BATT_VIA_R = 0.4, 0.8, 2.3   # ring of vias in each pad
+
+# FC connector: side-entry JST SH on the front-left corner flat, opening
+# facing out so the lead leaves sideways
+J1_CORNER = "TL"
+J1_U = 34.0
 
 
 def rot(x, y, k):
@@ -90,10 +120,18 @@ def corner_uv(u, v, corner):
     return ((u * du[0] + v * dv[0]) / S2, (u * du[1] + v * dv[1]) / S2)
 
 
+CORNER_ANGLE = {"TR": -45.0, "BR": 45.0, "BL": 135.0, "TL": -135.0}   # screen, y down
+
+
 def battery_pads():
-    """Battery leads come up through the window in the hub floor under the
-    stack, go through these holes from the bottom and are soldered on both
-    sides. Pad 1 (battery +) feeds the shunts on top, pad 2 (battery -) lands
-    on the bottom GND pour. Power enters in the middle and spreads out to the
-    four edges."""
-    return {"1": (BATT_X[0], BATT_Y, 0.0), "2": (BATT_X[1], BATT_Y, 0.0)}
+    """Pad 1 (battery +) feeds the shunts on top through the "battery +"
+    pour, pad 2 (battery -) lands on the bottom GND pour and the GND plane.
+    The third value is the pad's KiCad orientation, long side along the
+    corner diagonal."""
+    return {n: (*corner_uv(BATT_U, v, BATT_CORNER), -CORNER_ANGLE[BATT_CORNER])
+            for n, v in BATT_V.items()}
+
+
+def j1_pose():
+    """Centre of J1 and the screen angle its opening faces."""
+    return (*corner_uv(J1_U, 0.0, J1_CORNER), CORNER_ANGLE[J1_CORNER])

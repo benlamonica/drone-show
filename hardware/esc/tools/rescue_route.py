@@ -289,6 +289,21 @@ def to_segments(g, path):
     return out
 
 
+# The MCU-to-driver PWM lines are nested: route them inside out, high side
+# first, so an early one can't wall in the next
+PWM_ORDER = ("CH", "BH", "AH", "AL", "BL", "CL")
+
+
+def order(name):
+    m = re.match(r"/(ESC\d)/(\w+)$", name)
+    if m and m.group(2) in PWM_ORDER:
+        return (0, m.group(1), PWM_ORDER.index(m.group(2)))
+    # then the driver's bootstrap pins, boxed in among its gate pins
+    if re.search(r"-VB\d\)$", name):
+        return (1, name, 0)
+    return (2, name, 0)
+
+
 def main(src, drc, dst):
     d = json.load(open(src))
     g = Grid(d)
@@ -304,7 +319,7 @@ def main(src, drc, dst):
     codes = {v["name"]: int(k) for k, v in d["nets"].items()}
     nets = {int(k): v for k, v in d["nets"].items()}
     added, ripped, failed = [], [], []
-    for name in sorted(names):
+    for name in sorted(names, key=order):
         code = codes[name]
         info = nets[code]
         cl = info.get("clearance", 0.2)

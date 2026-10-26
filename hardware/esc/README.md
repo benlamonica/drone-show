@@ -4,44 +4,17 @@ A 4-layer re-layout of [OpenESC-30x30](https://github.com/benlamonica/OpenESC-30
 for PCBWay's standard process. The circuit is the prototype's (four AT32F421
 MCUs running AM32, four NSG2065Q gate drivers, 24 SP40N01GHNK FETs, INA186
 current sense, LMR54406 10 V buck, TLV767 3.3 V LDO). What changed is the
-board: 4 layers instead of 6, every passive 0603 or bigger, and an 80 mm
-octagon instead of a 30 x 30 mm square.
+board: 4 layers instead of 6, 0402 and bigger passives, and an 80 mm octagon
+instead of a 30 x 30 mm square.
 
-## Status: not ready to order yet
+## Status
 
-The board is placed and routed with no clearance errors, but 19 connections
-are still open (KiCad DRC lists them as unconnected). They are short signal
-hops in the crowded area round each MCU and gate driver, which the
-autorouter and the clean-up router could not fit. Finish them in KiCad with
-the interactive router (push and shove), run DRC until it shows 0
-unconnected, then run `tools/export.sh` again: the files in `fab/` are from
-the unfinished board.
-
-| Net | From | To |
-|---|---|---|
-| +3V3 | U2 pad 17 | track at (-13.2, 23.7) |
-| +3V3 | track at (-23.7, -14.4) | U7 pad 17 |
-| +3V3 | track at (29.6, 15.0) | U5 pad 17 |
-| +BATT | zone at (40.0, -13.5) | zone at (40.0, -13.5) |
-| /ESC1/AH | U2 pad 20 | U4 pad 22 |
-| /ESC1/CL | track at (-4.9, 11.7) | U2 pad 13 |
-| /ESC1/MotorA | track at (2.8, 13.3) | track at (-1.1, 12.7) |
-| /ESC1/vdda | track at (-12.9, 31.5) | U2 pad 5 |
-| /ESC2/CL | U6 pad 3 | U5 pad 13 |
-| /ESC2/FBA | track at (29.3, 17.7) | U5 pad 6 |
-| /ESC2/MotorB | track at (11.1, -2.7) | U6 pad 15 |
-| /ESC3/BH | U7 pad 19 | via at (-14.4, -3.8) |
-| /ESC3/MotorB | track at (-11.9, 3.3) | U8 pad 15 |
-| /ESC3/vdda | track at (-32.9, -12.8) | U7 pad 5 |
-| /ESC4/AH | U10 pad 22 | U9 pad 20 |
-| /ESC4/BH | U9 pad 19 | via at (3.8, -14.4) |
-| /ESC4/CL | U10 pad 3 | U9 pad 13 |
-| Net-(U4-VB2) | track at (-1.1, 12.3) | C32 pad 2 |
-| Net-(U9-NRST) | track at (14.2, -35.6) | U9 pad 4 |
-
-The +BATT entry is a small piece of top pour that needs a via to the +BATT
-layer. The schematic-parity warnings for U3 pins 3 to 11 are expected: the
-FC wire pads were taken off the board (J1 carries those signals).
+The board is placed and routed. KiCad DRC shows 0 errors and 0 unconnected
+items. The remaining warnings are expected: schematic parity for U3 pins 3 to
+11 (the FC wire pads were taken off the board, and J1 carries those signals),
+the schematic's empty LCSC fields, and a few dangling stubs and thin pour
+slivers. Look over the gate drive and current-sense routing before ordering a
+big batch. Nobody has built one yet.
 
 ## Ratings
 
@@ -50,7 +23,7 @@ FC wire pads were taken off the board (J1 carries those signals).
 | Battery | 4S to 6S (25.2 V max). The FETs are 40 V parts, so leave the prototype's 6S ceiling alone. |
 | Current | about 35 A continuous per motor with airflow, limited by 2 oz copper and the FET package. Show flying (hover plus gentle moves) needs a fraction of that. |
 | Firmware | AM32 for AT32F421, same pinout as OpenESC-30x30, flashed over the motor signal lines through J1 (AM32 bootloader), or over SWD test points. |
-| FC link | JST-SH 8-pin (Betaflight 4-in-1 order: VBAT, GND, CURR, TLM, M1 to M4). |
+| FC link | JST-SH 8-pin side entry, SM08B-SRSS-TB (Betaflight 4-in-1 order: VBAT, GND, CURR, TLM, M1 to M4; TLM is not connected). |
 | Mounting | 30.5 mm M3 pattern, 3.3 mm unplated holes with a 6.9 mm copper-free ring, so it stacks with the FC on rubber standoffs. |
 
 ## Board
@@ -61,27 +34,57 @@ FC wire pads were taken off the board (J1 carries those signals).
 * Two layers were tried first and did not work: at 66 mm the gate-drive lines
   had no room, and at 74 mm the routing cut the GND pour into islands, which
   is no good on a board switching 100+ A. The inner planes fix both and give a
-  much shorter commutation loop. Even on four layers the autorouter needed
-  the extra room of 80 mm to get the PWM lines from each MCU to its driver.
+  much shorter commutation loop.
 * Each motor owns one edge. The high-side FET of each half-bridge is on top,
   its low-side FET directly underneath on the bottom, and the phase copper runs
   out to plated motor pads on the edge.
 * The outer layers are +BATT pour on top and GND pour on the bottom, stitched
-  to the inner planes. Battery
-  leads (14 AWG) come up through the hub floor and solder into two plated holes
-  in the middle of the board, so current spreads to all four edges evenly.
-* 24 x 10 uF 1206 ceramics sit around the power path; add a 35 V low-ESR
-  electrolytic (470 uF or more) on the battery leads as usual.
-* MCUs and their passives are in the corners, gate drivers, gate resistors and
-  bootstrap parts on the bottom next to their FETs.
-* Parts: smallest passive is 0603 (one 0603-size 4.7 uH inductor). The ICs are
-  the prototype's packages; the MCU QFN at 0.4 mm pitch is the finest pitch on
-  the board.
+  to the inner planes.
+* The motor channels own the four axis edges; the corner flats carry the
+  connections:
+  * **Battery** on the rear-right corner flat (marked BAT+ / BAT- on both
+    sides). Each pad is a 7 x 6 mm plated pad with bare copper on both sides,
+    a 2.2 mm hole (12 or 14 AWG goes straight through) and a ring of eight
+    small plated holes so the current reaches both sides. Solder the battery
+    lead on one side and the low-ESR electrolytic (35 V, 470 uF or more) on
+    the other, legs on the matching pads, so the cap sits right at the power
+    entry. The two current-sense shunts sit right beside BAT+, with the INA186
+    and its input filter underneath on the bottom. Its output filter (R73,
+    C94) is at the FC end, under J1.
+  * **FC connector** J1 on the front-left corner flat: a side-entry JST SH
+    with its opening facing out of the board edge, so the lead leaves sideways
+    instead of standing up into the stack.
+* Each channel's logic sits on the bottom, on the GND pour, in the wedge
+  between the board centre and its FETs. The gate driver is just inboard of
+  the FETs, with the gate resistors and bootstrap caps. The MCU is on the
+  centre side of the driver, 6 mm from the middle of the board, so the six
+  PWM lines are a few millimetres long and stay on one layer. The four MCUs
+  form a ring round the centre, with their DShot resistors in the middle.
+  The MCU's NRST, BOOT0 and VDDA parts, its 3V3 decoupling cap and the SWD
+  test points are on top, right over it. The corners stay free for the
+  battery, the FC connector and the 10 V / 3.3 V supplies, which are on the
+  bottom of the rear-left corner.
+* The MCU and gate-driver pins are 0.4 and 0.5 mm apart and boxed in on
+  every side, which neither router gets out of reliably. So the MCU, the
+  driver and the caps round them are placed exactly, and the escapes are
+  drawn by `tools/route_prep.py`, the same in every channel: the PWM lines,
+  the 3V3, NRST, VDDA and back-EMF escapes, and the driver's high-side row.
+  The high-side gate lines drop to vias there and cross on top. 0.18 mm
+  tracks keep every gap at 0.22 mm or more.
+* 24 x 10 uF 1206 ceramics sit around the power path, next to each channel's
+  high-side FETs.
+* Parts: the MCU passives (decoupling, NRST, BOOT0, VDDA, back-EMF dividers,
+  DShot resistor) are 0402, which gives the MCU room for a clear ring of
+  escape tracks; everything else is 0603 or bigger. Nothing is smaller than
+  0402. The ICs are the prototype's packages; the MCU QFN at 0.4 mm pitch is
+  the finest pitch on the board.
 
 ### Changes from the prototype BOM
 
-* All 0402 resistors and capacitors became 0603 (same values; YAGEO RC0603 and
-  Samsung CL10 part numbers in the schematic).
+* The prototype's 0201 and 0402 resistors and capacitors became 0402 round
+  each MCU (YAGEO RC0402, Samsung CL05B104KB5NNNC) and 0603 everywhere else
+  (YAGEO RC0603, Samsung CL10). Same values throughout.
+* J1 is the side-entry SM08B-SRSS-TB instead of a top-entry connector.
 * The bulk ceramics are now real schematic symbols (C100 to C123) so they are
   in the BOM and the pick-and-place file.
 * QFN-28 footprint: the prototype's footprint was missing pads 8, 23 and 24.
@@ -119,20 +122,29 @@ The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
 * Bottom-side parts stand about 1.2 mm proud of the board. The low ring and
   spokes at boss height in the hub touch them, so either raise the ESC on
   3 mm spacers/grommets or drop the ring by 3 mm.
-* A window in the hub floor under the middle of the board for the battery
-  leads to come up through.
+* The battery leads leave from the rear-right corner flat, where motor 1's arm
+  socket is. Leave a gap or notch in the hub wall there for the leads and the
+  electrolytic (about 12 mm wide for two 12 AWG leads, more if the cap lies
+  beside them), and route the leads back past the arm. The hub floor no longer
+  needs a window under the board.
+* J1's plug comes out of the front-left corner flat, sideways: leave about
+  8 mm clear outside that flat (motor 4's arm socket) for the plug and its
+  lead, which then runs up to the FC.
 
 ## Notes and limits
 
-* The signal tracks are autorouted (Freerouting), then finished by
-  `tools/rescue_route.py`, a small grid maze router for what Freerouting
-  leaves open. Have a look over the gate drive and current-sense routing
-  before ordering a big batch.
+* Apart from the drawn escapes, the signal tracks are routed in three steps.
+  First `tools/rescue_route.py`, a small grid maze router, routes the MCU's
+  short local nets, the bootstrap nets and 3V3 on the near-empty board. Then
+  Freerouting routes everything else round them. Finally the maze router
+  finishes what Freerouting left open.
 * RS2205-class motors are usually wound for 4S. On 6S pick a lower KV
   (about 1700 to 1900 KV) or limit throttle in the FC.
 * The FETs and gate drivers sit on both sides, so the board can't be all
   parts-on-top like the FC. Bottom parts stand about 1.2 mm proud; the rubber
-  standoffs between stacked boards need to be taller than that.
+  standoffs between stacked boards need to be taller than that. Nothing on the
+  board stands up into the stack any more: J1 is side entry and the
+  electrolytic hangs off the battery pads.
 * Four layers is a bit more per board than two at PCBWay, but still far below
   the prototype's six.
 
@@ -141,12 +153,15 @@ The board is bigger than the 30x30 prototype, so `frame/frame.py` needs:
 Everything is generated by scripts in `tools/` with KiCad 10:
 
 ```sh
-FREEROUTING=/path/to/freerouting-1.9.0.jar sh tools/build.sh   # schematic -> routed board
+FREEROUTING=/path/to/freerouting-1.9.0.jar PYTHON=/path/to/venv/bin/python sh tools/build.sh
 sh tools/export.sh                                             # board -> fab/
 ```
 
-`tools/build.sh` ends with the rescue router, which runs in plain Python 3
-with numpy, scipy and Pillow rather than KiCad's Python.
+A full build takes about 25 minutes on a laptop. `PYTHON` is a plain Python 3 with sexpdata, numpy, scipy and Pillow (the
+netlist converter and the rescue router run there); the board scripts run in
+KiCad's own Python (`KIPY`, found by itself on macOS). `sh tools/build.sh
+place` stops after placement, which takes seconds, for trying placement
+changes before a full routing run.
 
 `tools/layout.py` holds the board geometry (size, FET positions, pads) that
 the footprint and placement scripts share.

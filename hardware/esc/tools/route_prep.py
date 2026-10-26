@@ -1,7 +1,7 @@
 """Prepare the placed board for Freerouting. Run with KiCad's Python.
 
-    python3 tools/route_prep.py signals build/placed.kicad_pcb build/fanned.kicad_pcb build/route.dsn
-    python3 tools/route_prep.py resume build/routed.kicad_pcb build/route2.dsn
+    python3 tools/route_prep.py fanout build/placed.kicad_pcb build/fanned.kicad_pcb
+    python3 tools/route_prep.py resume build/prerouted.kicad_pcb build/route.dsn
 
 GND and +BATT are not routed as tracks: they are the inner planes plus the
 bottom and top pours. Every GND and +BATT pad gets a short stub to its own via
@@ -26,11 +26,16 @@ MM = pcbnew.FromMM
 CX, CY = 150.0, 100.0
 VIA, DRILL = 0.66, 0.3
 # exposed pad number of each part that has one
-# gate driver PWM inputs: they face the FETs, where the router can't get a
-# via in among the gate tracks, so they get theirs here (the MCU is on top)
-DRIVER_PWM_PINS = ("1", "2", "3", "22", "23", "24")
+# signal pins that get a via here, by part value: the MCU's BOOT0 pin goes
+# straight down to its resistor on the other side (NRST and VDDA sit side by
+# side at 0.4 mm, too close for two straight vias; the router staggers
+# theirs, and 3V3 gets its via in pwm_lines).
+SIGNAL_VIA_PINS = {"AT32F421G8U7": ("1",)}
 EXPOSED_PADS = {"AT32F421G8U7": "29", "NSG2065Q": "25", "TLV76733DRVR": "7"}
 GAP = 0.22
+# a 0.2 mm stub leaving a 0.4 mm pitch QFN pin clears its neighbours by
+# 0.21 mm, which the fab's 0.2 mm allows
+STUB_GAP = 0.2
 
 
 def v(x, y):
@@ -62,6 +67,11 @@ class Obstacles:
                 x, y = xy(t.GetPosition())
                 r = pcbnew.ToMM(t.GetWidth(pcbnew.F_Cu)) / 2
                 self.items.append((x - r, y - r, x + r, y + r, t.GetNetCode(), {"F", "B"}, True))
+            else:
+                ax, ay = xy(t.GetStart())
+                bx, by = xy(t.GetEnd())
+                self.add_track(ax, ay, bx, by, t.GetNetCode(), pcbnew.ToMM(t.GetWidth()),
+                               "B" if t.GetLayer() == pcbnew.B_Cu else "F")
 
     def via_ok(self, x, y, net, r=VIA / 2):
         lim = L.CHAMFER * L.S2 - 0.8 * L.S2
@@ -90,7 +100,7 @@ class Obstacles:
                 x, y = ax + (bx - ax) * i / n, ay + (by - ay) * i / n
                 if own[0] <= x <= own[2] and own[1] <= y <= own[3]:
                     continue    # still on the pad itself, which is already there
-                if x + r + GAP > x0 and x - r - GAP < x1 and y + r + GAP > y0 and y - r - GAP < y1:
+                if x + r + STUB_GAP > x0 and x - r - STUB_GAP < x1 and y + r + STUB_GAP > y0 and y - r - STUB_GAP < y1:
                     return False
         return True
 
@@ -157,8 +167,8 @@ def fanout(board):
                 # the outer pours get cut up by the routing, so every GND and
                 # +BATT pad gets its own via to the inner planes, except the
                 # FETs (big pads in the pours, low-side sources on their tabs)
-                pwm = fp.GetValue() == "NSG2065Q" and p.GetNumber() in DRIVER_PWM_PINS
-                if not pwm and (net not in ("GND", "+BATT") or fp.GetValue() == "SP40N01GHNK"):
+                sig = p.GetNumber() in SIGNAL_VIA_PINS.get(fp.GetValue(), ())
+                if not sig and (net not in ("GND", "+BATT") or fp.GetValue() == "SP40N01GHNK"):
                     continue
             if p.GetNumber() == ep_num:
                 # exposed pad: one via in it, the middle if nothing on the
@@ -212,13 +222,13 @@ def fanout(board):
                     away = 0.0 if px > fx else math.pi
                 else:
                     away = math.pi / 2 if py > fy else -math.pi / 2
-                angles = [0, 30, -30, 60, -60]
+                angles = [0, 30, -30, 45, -45, 60, -60]
             width = 0.4 if min(sx, sy) > 0.2 else 0.2
             b = p.GetBoundingBox()
             own = (*xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop())), *xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom())))
             layer = "B" if bottom else "F"
             placed = False
-            for dist in (0.15, 0.4, 0.7, 1.0, 1.4, 1.8):
+            for dist in (0.15, 0.4, 0.7, 1.0, 1.4, 1.8, 2.2):
                 for da in angles:
                     a = away + math.radians(da)
                     ext = abs(math.cos(a)) * sx + abs(math.sin(a)) * sy
@@ -314,9 +324,141 @@ def signals(src, fanned, dsn):
     write_dsn(board, dsn)
 
 
+def fanout_only(src, fanned):
+    board = pcbnew.LoadBoard(src)
+    pwm_lines(board)
+    fanout(board)
+    board.Save(fanned)
+
+
+# The six PWM lines from each MCU to its gate driver, and the MCU's 3V3 pin
+# with its via, drawn by hand: the MCU pins are 0.4 mm apart and boxed in on
+# both sides, which neither router gets out of reliably. Channel coordinates
+# for the MCU and driver at layout.MCU_POS and DRV_POS, both on the bottom;
+# 0.18 mm tracks keep every gap at 0.22 mm or more.
+PWM_W = 0.18
+PWM_PATHS = {
+    # high side: up out of the MCU, over the low-side lines, into the
+    # driver's left-hand pins
+    "CH": [(6.0, 1.87), (6.0, 3.45), (8.0, 3.45), (8.5, 2.95), (9.6, 2.95)],
+    "BH": [(5.6, 1.87), (5.6, 3.95), (8.1, 3.95), (8.6, 3.45), (9.6, 3.45)],
+    "AH": [(5.2, 1.87), (5.2, 4.45), (8.2, 4.45), (8.7, 3.95), (9.6, 3.95)],
+    # low side: across underneath, into the driver's lower pins from below
+    "AL": [(7.2, 1.87), (7.2, 2.2), (7.55, 2.55), (8.9, 2.55), (8.9, 1.7), (10.25, 1.7), (10.25, 2.28)],
+    "BL": [(7.87, 1.2), (10.75, 1.2), (10.75, 2.28)],
+    "CL": [(7.87, 0.8), (8.5, 0.8), (8.7, 0.6), (11.25, 0.6), (11.25, 2.28)],
+}
+# the other boxed-in pins, on the MCU's -y side: 3V3 (above), NRST and VDDA
+# drop to staggered vias for their parts on top; FBA and FBCOMMON get short
+# diverging escapes that the maze router carries on from
+ESCAPES = {
+    "+3V3": [(6.4, 1.87), (6.4, 2.45), (6.75, 2.8)],
+    "NRST": [(6.0, -1.87), (6.0, -2.8), (5.3, -3.4)],
+    "vdda": [(6.4, -1.87), (6.4, -3.6), (6.5, -3.9)],
+    "FBA": [(6.8, -1.87), (6.8, -2.5), (7.3, -3.0)],
+    "FBCOMMON": [(7.2, -1.87), (7.2, -2.1), (7.6, -2.5)],
+}
+# The gate driver's high-side row (pins 13-20) the same way: the 0.5 mm pins
+# sit between the PWM lines and the bootstrap caps, and their gate lines have
+# to get past both. The three high-side gate lines drop to staggered vias
+# and cross on top, where the board over the driver is free; each bootstrap
+# (VB) and phase (VS) pin runs in its own lane into its cap (layout.CB_POS,
+# phase pad 1 at the top end, VB pad 2 at the bottom end). The phase nets
+# then go on to the phase copper with the routers.
+DRIVER_PATHS = {
+    "VB1": [(9.6, 4.95), (8.3, 4.95), (8.3, 11.375), (9.6, 11.375)],
+    "GHA": [(9.6, 5.45), (9.15, 5.45), (9.15, 7.0)],
+    "VS1": [(10.25, 6.12), (10.25, 8.4), (9.7, 8.4), (10.25, 8.4), (10.25, 8.9), (9.75, 9.4), (9.6, 9.825)],
+    "VB2": [(10.75, 6.12), (10.75, 11.375), (11.6, 11.375)],
+    "GHB": [(11.25, 6.12), (11.25, 7.8), (11.4, 8.2)],
+    "VS2": [(11.75, 6.12), (11.75, 7.2), (12.05, 7.5), (12.05, 9.4), (11.6, 9.825)],
+    "VB3": [(12.25, 6.12), (12.25, 6.9), (12.75, 7.4), (12.75, 10.775), (13.6, 10.775)],
+    "GHC": [(12.75, 6.12), (12.75, 6.6), (13.5, 7.35)],
+    "VS3": [(13.4, 5.45), (14.2, 5.45), (14.2, 8.4), (13.9, 8.8), (13.6, 9.225)],
+}
+# the phase pads of caps A and B are boxed in by the bootstrap lanes, so
+# their phase lines get a via each to leave by
+DRIVER_VIAS = {"GHA": (9.15, 7.0), "GHB": (11.4, 8.2), "GHC": (13.5, 7.35),
+               "VS1": (9.7, 8.4), "VS2": (12.05, 9.0)}
+DRIVER_PIN = {"VB1": "20", "GHA": "19", "VS1": "18", "VB2": "17", "GHB": "16",
+              "VS2": "15", "VB3": "14", "GHC": "13", "VS3": "12"}
+
+
+def pwm_lines(board):
+    assert L.MCU_POS == (6.0, 0.0) and L.DRV_POS == (11.5, 4.2), \
+        "PWM_PATHS and ESCAPES are drawn for the MCU at (6, 0) and the driver at (11.5, 4.2)"
+    for ch, k in L.CHANNELS.items():
+        mcu = next(fp for fp in board.GetFootprints() if fp.GetValue() == "AT32F421G8U7"
+                   and any(p.GetNetname() == f"/{ch}/AL" for p in fp.Pads()))
+        pin_net = {p.GetNumber(): p.GetNet() for p in mcu.Pads()}
+        own = {"+3V3": pin_net["17"], "NRST": pin_net["4"], "vdda": pin_net["5"],
+               "FBA": pin_net["6"], "FBCOMMON": pin_net["7"]}
+        drv = next(fp for fp in board.GetFootprints() if fp.GetValue() == "NSG2065Q"
+                   and any(p.GetNetname() == f"/{ch}/AL" for p in fp.Pads()))
+        dpin = {p.GetNumber(): p.GetNet() for p in drv.Pads()}
+        own.update({name: dpin[num] for name, num in DRIVER_PIN.items()})
+        for name, pts in list(PWM_PATHS.items()) + list(ESCAPES.items()) + list(DRIVER_PATHS.items()):
+            net = own.get(name) or board.FindNet(f"/{ch}/{name}")
+            pts = [L.rot(x, y, k) for x, y in pts]
+            for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+                t = pcbnew.PCB_TRACK(board)
+                t.SetStart(v(ax, ay))
+                t.SetEnd(v(bx, by))
+                t.SetWidth(MM(PWM_W))
+                t.SetLayer(pcbnew.B_Cu)
+                t.SetNet(net)
+                board.Add(t)
+        # FBA and FBCOMMON escapes into RFCA's pads
+        rfca = next(fp for fp in board.GetFootprints() if fp.IsFlipped() and math.hypot(
+            *(a - b for a, b in zip(xy(fp.GetPosition()), L.rot(*L.RFCA_POS, k)))) < 0.05)
+        for pad in rfca.Pads():
+            name = "FBCOMMON" if pad.GetNetname().endswith("FBCOMMON") else "FBA"
+            t = pcbnew.PCB_TRACK(board)
+            t.SetStart(v(*L.rot(*ESCAPES[name][-1], k)))
+            t.SetEnd(pad.GetPosition())
+            t.SetWidth(MM(PWM_W))
+            t.SetLayer(pcbnew.B_Cu)
+            t.SetNet(pad.GetNet())
+            board.Add(t)
+        # driver pin 4 (+10V) down to its supply cap's +10V pad
+        cap = next(fp for fp in board.GetFootprints() if fp.IsFlipped() and math.hypot(
+            *(a - b for a, b in zip(xy(fp.GetPosition()), L.rot(*L.CVCC_POS, k)))) < 0.05)
+        pad = next(p for p in cap.Pads() if p.GetNetname() == "+10V")
+        px, py = L.rot(*xy(pad.GetPosition()), -k)
+        assert abs(px - (L.CVCC_POS[0] - 0.775)) < 0.01, "CVCC +10V pad must face the driver"
+        pts = [(11.75, 2.28), (11.75, 1.3), (px - 0.25, py + 0.25), (px, py)]
+        for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+            t = pcbnew.PCB_TRACK(board)
+            t.SetStart(v(*L.rot(ax, ay, k)))
+            t.SetEnd(v(*L.rot(bx, by, k)))
+            t.SetWidth(MM(PWM_W))
+            t.SetLayer(pcbnew.B_Cu)
+            t.SetNet(pad.GetNet())
+            board.Add(t)
+        # 3V3 via up to the decoupling cap's pad on top
+        cap = next(fp for fp in board.GetFootprints() if not fp.IsFlipped() and any(
+            p.GetNet().GetNetname() == "+3V3" for p in fp.Pads()) and math.hypot(
+            *(a - b for a, b in zip(xy(fp.GetPosition()), L.rot(*L.C3V3_POS, k)))) < 0.05)
+        pad = next(p for p in cap.Pads() if p.GetNetname() == "+3V3")
+        t = pcbnew.PCB_TRACK(board)
+        t.SetStart(v(*L.rot(*L.MCU_VIAS["+3V3"], k)))
+        t.SetEnd(pad.GetPosition())
+        t.SetWidth(MM(0.25))
+        t.SetLayer(pcbnew.F_Cu)
+        t.SetNet(pad.GetNet())
+        board.Add(t)
+        for name, pos in list(L.MCU_VIAS.items()) + list(DRIVER_VIAS.items()):
+            via = pcbnew.PCB_VIA(board)
+            via.SetPosition(v(*L.rot(*pos, k)))
+            via.SetWidth(MM(VIA))
+            via.SetDrill(MM(DRILL))
+            via.SetNet(own[name])
+            board.Add(via)
+
+
 def resume(routed, dsn):
-    """DSN of a routed board, so another Freerouting run can carry on from
-    where the last one stopped instead of starting again."""
+    """DSN of a board that already has some routing (the pre-routed local
+    nets, or an earlier Freerouting run), kept as protected wiring."""
     write_dsn(pcbnew.LoadBoard(routed), dsn)
 
 
@@ -335,6 +477,11 @@ def write_dsn(board, dsn):
     print("dsn", dsn, pcbnew.ExportSpecctraDSN(board, dsn))
     power_layers(dsn)
     phase_wires(dsn)
+    t = open(dsn).read()
+    # Freerouting rounds: aim 5 um wide of the fab's 0.2 mm so the result
+    # doesn't land at 0.199 mm
+    t = t.replace("(clearance 200)", "(clearance 205)")
+    open(dsn, "w").write(t.replace("(type route)", "(type protect)"))
 
 
 def phase_wires(dsn):
@@ -373,4 +520,4 @@ def phase_wires(dsn):
 
 
 if __name__ == "__main__":
-    {"signals": signals, "resume": resume}[sys.argv[1]](*sys.argv[2:])
+    {"signals": signals, "fanout": fanout_only, "resume": resume}[sys.argv[1]](*sys.argv[2:])

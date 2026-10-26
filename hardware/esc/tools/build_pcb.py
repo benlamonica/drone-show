@@ -410,19 +410,26 @@ def build(netlist_path, out_path):
                     add_via(board, m, px, py)
                     floor.add("both", (px - 0.6, py - 0.6, px + 0.6, py + 0.6), "via")
 
-    # ---- channel logic. Gate driver, bootstrap caps and gate resistors on the
-    # bottom next to the FETs; MCU and its parts on top, on a GND island in
-    # the corner clockwise from the channel's edge.
+    # ---- channel logic, all on the bottom (GND pour) in the channel's wedge
+    # between the centre and the FETs, so the corners are free for the
+    # battery and FC connections. Gate driver just inboard of the FETs with
+    # its bootstrap caps and the gate resistors; the MCU on the centre side
+    # of the driver, so the six PWM lines are short and stay on one layer.
     fx = L.FET_X - 3.37          # inner edge of the FETs
     for ch, k in L.CHANNELS.items():
         r = roles[ch]
 
-        def put(role, x, y, axis="+x", ang=0.0, bottom=True, scale=True, **kw):
+        def put(role, x, y, axis="+x", ang=0.0, bottom=True, scale=True, exact=False, **kw):
             # the logic positions were laid out for FET_X = 20.5 and scale with it
             if scale:
                 x, y = x * LOGIC, y * LOGIC
             px, py = L.rot(x, y, k)
-            floor.settle(fps[r[role]], px, py, axis, ang + 90 * k, bottom, **kw)
+            if exact:
+                # pre-routed parts: exactly here in every channel
+                place(fps[r[role]], px, py, axis, ang + 90 * k, bottom)
+                floor.fix(fps[r[role]])
+            else:
+                floor.settle(fps[r[role]], px, py, axis, ang + 90 * k, bottom, **kw)
             if role in HALO:
                 # keep a ring clear round the fine-pitch ICs so every pin can escape
                 b = bbox(fps[r[role]])
@@ -433,58 +440,169 @@ def build(netlist_path, out_path):
             y = L.PHASE_Y[ph]
             put(f"RGL{ph}", fx - 1.7, y - 1.9, scale=False)
             put(f"RGH{ph}", fx - 1.7, y - 3.25, scale=False)
-        # PWM inputs (pins 1-3, 22-24) face the MCU in the corner, gate
-        # outputs face the gate resistors along the FET row
-        # driver sits inboard of the FETs, low enough that its PWM lines to
-        # the MCU pass below the mounting hole rather than round it
-        put("DRV", 11.5, 3.0, "+y", 180, scale=False)
-        for ph, (x, y) in zip("ABC", ((13.3, -1.0), (11.5, -1.0), (9.7, -1.0))):
-            put(f"CB{ph}", x, y, "+x", 90, scale=False)
-        put("CVCC", 8.3, 4.4, "+x", 90, scale=False)
-        # top side
-        put("MCU", 21.6, 14.2, "+y", 270, False)
-        put("C3V3", 18.6, 10.9, "+x", 0, False)
-        for role, (x, y, a) in {"RBOOT": (25.6, 11.4, 90), "RNRST": (27.2, 11.4, 90),
-                                "CNRST": (28.8, 11.4, 90), "RVDDA": (25.4, 14.6, 90),
-                                "CVDDA": (27.0, 14.0, 90), "RFCA": (25.0, 17.4, 90),
-                                "RFBA": (23.4, 17.6, 90), "RFCB": (21.8, 17.6, 90),
-                                "RFBB": (20.2, 17.6, 90), "RFCC": (19.4, 19.6, 0),
-                                "RFBC": (21.4, 19.8, 0), "RFTA": (30.0, 11.0, 0),
-                                "RFTB": (29.4, 12.6, 0), "RFTC": (24.4, 10.8, 0),
-                                "RDSHOT": (18.6, 22.0, 0), "TPDIO": (13.6, 21.6, 0),
-                                "TPCLK": (11.6, 23.6, 0)}.items():
-            put(role, x, y, "+x", a, False, step=0.15)
+        # driver: low-side gate outputs face the FETs, high-side outputs and
+        # bootstrap pins face +y, PWM inputs (pins 1-3, 22-24) face the MCU
+        put("DRV", L.DRV_POS[0], L.DRV_POS[1], "+x", 90, scale=False, exact=True)
+        # route_prep.pwm_lines draws the driver's high-side row into the
+        # bootstrap caps (placed exactly) and drops its gate lines to vias:
+        # keep that area clear
+        for x0, y0, x1, y1, side in ((8.0, 4.7, 14.5, 11.9, "bot"), (8.6, 6.45, 14.0, 8.7, "both")):
+            pts = [L.rot(x, y, k) for x, y in ((x0, y0), (x1, y1))]
+            floor.add(side, (min(p[0] for p in pts), min(p[1] for p in pts),
+                             max(p[0] for p in pts), max(p[1] for p in pts)), "drawn")
+        for ph, (x, y) in L.CB_POS.items():
+            put(f"CB{ph}", x, y, "+x", 90, scale=False, exact=True)
+            c = fps[r[f"CB{ph}"]]
+            vb = next(p for p in c.Pads() if p.GetNetname().startswith("Net-("))
+            assert L.rot(*xy(vb.GetPosition()), -k)[1] > y, "bootstrap cap VB pad must be at the bottom end"
+        # driver supply cap, exactly, +10V pad towards pin 4: route_prep
+        # draws the hop (pin 4 is boxed in by the CL line)
+        put("CVCC", L.CVCC_POS[0], L.CVCC_POS[1], "+x", 0, scale=False, exact=True)
+        c = fps[r["CVCC"]]
+        p10 = next(p for p in c.Pads() if p.GetNetname() == "+10V")
+        if L.rot(*xy(p10.GetPosition()), -k)[0] > L.CVCC_POS[0]:
+            c.SetOrientationDegrees(c.GetOrientationDegrees() + 180)
+        # MCU: PWM pins (13-15, 18-20) face the driver; the low-side lines
+        # go straight across, the high-side ones loop above them (drawn by
+        # route_prep.pwm_lines). FBB/FBC
+        # face +x and FBA/FBCOMMON sit at the +x end of the -y side, next to
+        # the back-EMF dividers; DShot (PB4) faces the board centre.
+        put("MCU", L.MCU_POS[0], L.MCU_POS[1], "+x", 90, scale=False, exact=True)
+        # in the same order as the pins (FBB under FBC on the +x side, FBA
+        # on the -y side), so no back-EMF line has to cross another
+        # RFCA exactly, FBCOMMON pad towards the MCU: route_prep runs the FBA and
+        # FBCOMMON escapes straight into it
+        put("RFCA", L.RFCA_POS[0], L.RFCA_POS[1], "+x", 90, scale=False, exact=True)
+        c = fps[r["RFCA"]]
+        fbc = next(p for p in c.Pads() if p.GetNetname().endswith("FBCOMMON"))
+        if L.rot(*xy(fbc.GetPosition()), -k)[1] < L.RFCA_POS[1]:
+            c.SetOrientationDegrees(c.GetOrientationDegrees() + 180)
+        rows = {"RFBB": (10.0, -1.9), "RFCB": (11.6, -1.9), "RFBC": (13.2, -1.9),
+                "RFCC": (14.8, -1.9), "RFBA": (9.6, -4.0),
+                "RFTA": (9.4, -6.2), "RFTB": (11.2, -6.2), "RFTC": (13.0, -6.2),
+                "RDSHOT": (2.4, 0.0)}
+        for role, (x, y) in rows.items():
+            ax = "+y" if role == "RDSHOT" else "+x"
+            put(role, x, y, ax, 90, scale=False, step=0.1)
+        # BOOT0, NRST, VDDA and 3V3 drop through vias to their
+        # parts on top, right over the MCU, where the board has room; the 3V3
+        # pin is boxed in by the PWM lines on the bottom anyway. SWD test
+        # points on top too, right over the MCU's SWD pins: the top side
+        # over the driver is where its high-side gate lines cross, and the
+        # back-EMF dividers need theirs for vias.
+        for x, y in L.MCU_VIAS.values():
+            vx, vy = L.rot(x, y, k)
+            floor.add("both", (vx - 0.55, vy - 0.55, vx + 0.55, vy + 0.55), "via")
+        for role, (x, y, a) in {"RBOOT": (4.2, -4.6, 90), "RNRST": (5.3, -4.9, 90),
+                                "CNRST": (6.6, -5.4, 270), "RVDDA": (7.8, -4.7, 90),
+                                "CVDDA": (8.4, -2.9, 0)}.items():
+            put(role, x, y, "+x", a, False, scale=False, step=0.1)
+        # 3V3 decoupling right over the 3V3 via; route_prep draws the hop
+        put("C3V3", L.C3V3_POS[0], L.C3V3_POS[1], "+x", 0, False, scale=False, exact=True)
+        put("TPDIO", 4.2, 1.2, "+x", 0, False, scale=False)
+        put("TPCLK", 5.0, -1.0, "+x", 0, False, scale=False)
 
     # ---- shared parts
     def put_shared(ref, x, y, axis="+x", ang=0.0, bottom=False, **kw):
         floor.settle(fps[ref], x, y, axis, ang, bottom, **kw)
 
-    # battery wires are soldered on the bottom too: keep a clear ring round them
+    def gnd_via(ref, num):
+        """A GND via of its own next to a small bottom part's GND pin, reserved
+        before the rest of its cluster settles round it: otherwise the pin can
+        end up on a scrap of bottom pour boxed in by tracks."""
+        pad = next(p for p in fps[ref].Pads() if p.GetNumber() == num)
+        px, py = xy(pad.GetPosition())
+        for rr_, a in ((r_, a_) for r_ in (0.9, 1.2, 1.5, 1.8, 2.2, 2.6, 3.0) for a_ in range(0, 360, 15)):
+            gx, gy = px + rr_ * math.cos(math.radians(a)), py + rr_ * math.sin(math.radians(a))
+            box = (gx - 0.55, gy - 0.55, gx + 0.55, gy + 0.55)
+            # on top only real copper counts: the floor holds bounding boxes,
+            # and the shunts above are 45 degree parts with big ones
+            near = False
+            for q in board.GetPads():
+                if q.GetNetname() == "GND":
+                    continue
+                b = q.GetBoundingBox()
+                x0, y0 = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
+                x1, y1 = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
+                if math.hypot(max(x0 - gx, 0, gx - x1), max(y0 - gy, 0, gy - y1)) < 0.6:
+                    near = True
+                    break
+                # the stub on the bottom must clear the other pads too
+                if q.IsOnLayer(pcbnew.B_Cu) and q is not pad:
+                    for i in range(1, 11):
+                        sx, sy = px + (gx - px) * i / 10, py + (gy - py) * i / 10
+                        if math.hypot(max(x0 - sx, 0, sx - x1), max(y0 - sy, 0, sy - y1)) < 0.4:
+                            near = True
+                            break
+                    if near:
+                        break
+            if not near and floor.free("bot", box, 0.1):
+                add_via(board, nets["GND"], gx, gy, 0.66, 0.3)
+                tr = pcbnew.PCB_TRACK(board)
+                tr.SetStart(pad.GetPosition())
+                tr.SetEnd(v(gx, gy))
+                tr.SetWidth(MM(0.3))
+                tr.SetLayer(pcbnew.B_Cu)
+                tr.SetNet(nets["GND"])
+                board.Add(tr)
+                floor.add("bot", box, "via")
+                return
+        print("WARNING: no GND via for", ref, num)
+
+    # battery leads and the electrolytic's legs are soldered on both sides:
+    # keep a clear ring round the pads
+    pad_r = math.hypot(L.BATT_PAD_L, L.BATT_PAD_W) / 2
     for x, y, _ in L.battery_pads().values():
-        floor.circles_bot.append((x, y, L.BATT_PAD_D / 2 + 1.6))
-    # FC connector, top entry, centre top
-    put_shared("J1", L.JST_POS[0], L.JST_POS[1], "+x", 0)
-    # current sense on top: battery + hole -> two 0.2 mOhm shunts -> +BATT pour
-    bx, by = L.battery_pads()["1"][:2]
-    put_shared("Rsense1", bx - 2.0, by + 7.2, "+x", 90, False, step=0.1)
-    put_shared("Rsense2", bx + 2.0, by + 7.2, "+x", 90, False, step=0.1)
-    for ref, (x, y, ang) in {"U12": (4.6, 8.4, 0), "R89": (2.6, 11.0, 90), "R90": (2.6, 6.4, 90),
-                             "C40": (7.2, 10.8, 90), "C41": (7.2, 6.6, 90), "C42": (4.6, 11.4, 0),
-                             "R73": (8.2, 8.6, 90), "C94": (9.6, 8.6, 90)}.items():
-        put_shared(ref, x, y, "+x", ang, False)
-    # supplies on the bottom, centre
+        floor.circles.append((x, y, pad_r + 0.6))
+    # FC connector, side entry, opening facing out of the front-left corner
+    jx, jy, jang = L.j1_pose()
+    place(fps["J1"], jx, jy, "+y", jang)
+    floor.fix(fps["J1"])
+    # current sense beside battery +: battery + pad -> "battery +" pour -> two
+    # 0.2 mOhm shunts lying along the diagonal -> +BATT pour round the
+    # mounting hole. The INA186 and its filter sit underneath on the bottom.
+    diag = L.CORNER_ANGLE[L.BATT_CORNER]
+    for ref, v_ in (("Rsense1", -3.8), ("Rsense2", -7.9)):
+        x, y = L.corner_uv(30.6, v_, L.BATT_CORNER)
+        # pin 1 (battery + side) outboard, pin 2 (+BATT) towards the hole
+        place(fps[ref], x, y, "-x", diag)
+        floor.fix(fps[ref])
+    # (inboard, towards the mounting hole: further out it sits in the way
+    # of the next channel's phase lines)
+    cs = {"U12": (25.0, -5.0), "R89": (23.0, -3.5), "R90": (27.0, -3.0), "C40": (24.5, -7.5),
+          "C41": (27.0, -6.0), "C42": (25.5, -2.5)}
+    for ref, (u, v_) in cs.items():
+        x, y = L.corner_uv(u, v_, L.BATT_CORNER)
+        put_shared(ref, x, y, "+x", 0, True, step=0.1)
+        if ref == "U12":
+            gnd_via("U12", "2")
+            # both GND pins on the one via
+            p1, p2 = (next(p for p in fps["U12"].Pads() if p.GetNumber() == n) for n in ("1", "2"))
+            tr = pcbnew.PCB_TRACK(board)
+            tr.SetStart(p1.GetPosition())
+            tr.SetEnd(p2.GetPosition())
+            tr.SetWidth(MM(0.3))
+            tr.SetLayer(pcbnew.B_Cu)
+            tr.SetNet(nets["GND"])
+            board.Add(tr)
+    # the CURR output filter (R73 series, C94 to GND) at the FC end, under J1
+    for ref, (u, v_) in {"R73": (30.0, -2.0), "C94": (30.0, 2.0)}.items():
+        x, y = L.corner_uv(u, v_, L.J1_CORNER)
+        put_shared(ref, x, y, "+x", 0, True, step=0.1)
+    # supplies on the bottom of the rear-left corner, out of the way of the
+    # MCU and driver vias in the middle, and away from the battery corner's
+    # current-sense line: the channel between them would get both feeds. The
+    # cluster was laid out for the front-right corner and is turned round.
     for ref, (x, y, ang) in {"U13": (-4.2, -5.0, 0), "U14": (-1.0, -5.6, 90), "C75": (-2.6, -7.8, 0),
                              "R120": (-7.0, -3.2, 90), "R121": (-7.0, -6.2, 90),
                              "C2": (-6.0, -9.6, 90), "C3": (-2.6, -10.2, 90), "C6": (0.8, -10.2, 90),
                              "C74": (-8.6, -9.0, 90), "C47": (1.6, -3.4, 0), "C76": (1.6, -1.6, 0),
                              "U15": (4.4, -4.4, 0), "C86": (1.6, -6.8, 90), "C4": (7.4, -3.0, 90),
                              "C51": (7.4, -6.4, 90), "C81": (4.4, -7.6, 0), "C93": (4.4, -1.4, 0)}.items():
-        put_shared(ref, x, y, "+x", ang, True)
-    # J1's GND pin sits in the top +BATT pour with the buck's GND pin right
-    # under it: one via through both pads joins them to the GND plane
-    jx = xy(next(p for p in fps["J1"].Pads() if p.GetNumber() == "2").GetPosition())[0]
-    uy = xy(next(p for p in fps["U13"].Pads() if p.GetNumber() == "2").GetPosition())[1]
-    add_via(board, nets["GND"], jx, uy, 0.66, 0.3)
+        sx, sy = L.rot(x + 23.0, y - 13.0, 2)
+        put_shared(ref, sx, sy, "+x", ang + 180, True)
+        if ref == "U13":
+            gnd_via("U13", "2")
 
     # ---- power copper
     out = L.outline()
@@ -503,34 +621,36 @@ def build(netlist_path, out_path):
             add_zone(board, n, pcbnew.B_Cu, rot_pts(bot, k), 2, name=f"{ch} {ph} bottom")
     for pts, name in source_tabs:
         add_zone(board, nets["GND"], pcbnew.B_Cu, pts, 2, name=name)
-    # top GND island under each channel's MCU, stitched to the bottom pour
-    for corner_k in range(4):
-        pts = rot_pts([(9.9, 9.9), (L.HALF + 2, 9.9), (9.9, L.HALF + 2)], corner_k)
-        add_zone(board, nets["GND"], pcbnew.F_Cu, pts, 1, name=f"MCU GND {corner_k}")
+    # battery + pad to the shunts' outboard pads
+    uv = [(29.0, -2.4), (29.0, 4.6), (37.6, 4.6), (37.6, -10.0), (31.7, -10.0), (31.7, -2.4)]
+    add_zone(board, nets["/CSA+"], pcbnew.F_Cu, [L.corner_uv(u, v_, L.BATT_CORNER) for u, v_ in uv], 3,
+             name="battery +")
+    # stitching round the battery entry: +BATT to the In2 plane round the
+    # shunts' inboard pads, GND to the In1 plane round battery -
+    for net, u0, u1, v0, v1 in (("+BATT", 23.0, 28.6, -9.6, 0.0), ("GND", 26.0, 36.0, 4.0, 16.0)):
         placed = 0
-        for u in (13.0, 16.0, 19.0, 22.0, 25.0, 28.0, 31.0, 34.0):
-            for w in (-9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0):
-                x0 = (u + w) / L.S2
-                y0 = (u - w) / L.S2
-                if x0 < 10.6 or y0 < 10.6:
-                    continue
-                gx, gy = L.rot(x0, y0, corner_k)
+        u = u0
+        while u <= u1:
+            v_ = v0
+            while v_ <= v1:
+                gx, gy = L.corner_uv(u, v_, L.BATT_CORNER)
                 rr = (gx - 0.6, gy - 0.6, gx + 0.6, gy + 0.6)
-                if floor.free("top", rr, 0.1) and floor.free("bot", rr, 0.1):
-                    add_via(board, nets["GND"], gx, gy)
+                ok = all(math.hypot(gx - hx, gy - hy) > L.HOLE_COPPER_FREE / 2 + 0.8 for hx, hy in L.holes())
+                if ok and floor.free("top", rr, 0.15) and floor.free("bot", rr, 0.15):
+                    add_via(board, nets[net], gx, gy)
                     floor.add("both", rr, "via")
                     placed += 1
-        print("corner", corner_k, "stitching vias", placed)
-    # battery + hole to the shunts' input pads
-    bx, by = L.battery_pads()["1"][:2]
-    add_zone(board, nets["/CSA+"], pcbnew.F_Cu, rect_pts(bx - 4.2, by - 3.0, bx + 4.2, by + 4.2), 3,
-             name="battery +")
+                v_ += 1.6
+            u += 1.6
+        print(net, "battery stitching vias", placed)
 
     # silkscreen
-    add_text(board, "drone-show ESC  4-6S  AM32", 0, -1.6, 0.8)
-    bp = L.battery_pads()
-    add_text(board, "BAT+", bp["1"][0], bp["1"][1] + 3.2, 0.8, pcbnew.B_SilkS)
-    add_text(board, "BAT-", bp["2"][0], bp["2"][1] + 3.2, 0.8, pcbnew.B_SilkS)
+    # in the empty front-right corner (the middle has the SWD test points)
+    add_text(board, "drone-show ESC  4-6S  AM32", *L.corner_uv(29.0, 0.0, "TR"), 0.8, angle=45)
+    for num, label in (("1", "BAT+"), ("2", "BAT-")):
+        x, y = L.corner_uv(L.BATT_U - 5.3, L.BATT_V[num], L.BATT_CORNER)
+        for layer in (pcbnew.F_SilkS, pcbnew.B_SilkS):
+            add_text(board, label, x, y, 0.8, layer, -45)
     for ch, k in L.CHANNELS.items():
         x, y = L.rot(L.MOTOR_PAD_X - 4.4, -10.6, k)
         add_text(board, ch[-1], x, y, 1.4)
