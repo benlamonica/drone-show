@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "lightctl")(type "KiCad")(uri "${KIPRJMOD}/lightctl.kicad_sym")(options "")(descr "Light controller local symbols"))
+)
