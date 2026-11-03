@@ -174,7 +174,9 @@ mcu.update({"46": "VREG_AVDD", "48": "VREG_LX", "47": "GND", "61": "GND", "21": 
 mcu.update(gpio)
 for n in ("7", "8", "9", "10", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34", "42", "51", "52"):
     mcu[n] = None   # unused GPIO
-add("U2", ("RP2350A", "RP2350A", "QFN60", "Raspberry Pi", "RP2350A (or RP2354A, then omit U3)"), mcu, B)
+# RP2354A: an RP2350A with 2 MB of flash in the package, so U3 and its C29 are not fitted.
+# Fit both only if you build with a plain RP2350A.
+add("U2", ("RP2350A", "RP2354A", "QFN60", "Raspberry Pi", "RP2354A"), mcu, B)
 for i, _ in enumerate(("1", "11", "20", "30", "38", "45")):
     add(f"C{11 + i}", "100n", two("+3V3", "GND"), B)
 for i in range(3):
@@ -195,8 +197,8 @@ add("C27", "15p", two("XIN", "GND"), B)
 add("C28", "15p", two("XOUT_X", "GND"), B)
 add("U3", ("W25Q16", "W25Q16JVSNIQ", "SOIC8", "Winbond", "W25Q16JVSNIQ"),
     {"1": "QSPI_SS", "2": "QSPI_SD1", "3": "QSPI_SD2", "4": "GND", "5": "QSPI_SD0",
-     "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B)
-add("C29", "100n", two("+3V3", "GND"), B)
+     "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B, dnp=True)
+add("C29", "100n", two("+3V3", "GND"), B, dnp=True)
 add("R11", "10k", two("+3V3", "RUN"), B)
 
 # --- FC UART, SWD and test pads (no USB or SWD connector: program through pogo pins, then over UART or Wi-Fi) -------------------------------------------------------
