@@ -71,7 +71,7 @@ F = {
     "SMB": "D_SMB", "SMA": "D_SMA", "SOD123": "D_SOD-123", "SOT223": "SOT-223-3_TabPin2",
     "SOT236": "SOT-23-6", "MSOP8EP": "MSOP-8-1EP_3x3mm_P0.65mm_EP1.68x1.88mm",
     "SOIC8": "SOIC-8_3.9x4.9mm_P1.27mm", "XTAL": "Crystal_SMD_3225-4Pin_3.2x2.5mm",
-    "XAL4020": "L_Coilcraft_XAL4020-XXX", "SRN6028": "L_Bourns-SRN6028",
+    "XAL4020": "L_4020_XAL_TYA", "SRN6028": "L_Bourns-SRN6028",
     "L2016": "L_Abracon_AOTA-B201610", "QFN60": "RP2350A_QFN-60_7x7mm_P0.4mm",
     "RM2": "RPi_RM2", "XPE2": "LED_Cree-XP",
     "SH3": "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal",
@@ -148,7 +148,8 @@ add("C6", "4u7_50", two("VIN", "GND"), B)
 add("C7", "100n", two("VIN", "GND"), B)
 add("R4", "100k", two("VIN", "BUCK_EN"), B)
 add("C8", "100n", two("BUCK_CB", "BUCK_SW"), B)
-add("L1", ("L", "6.8uH 3.6A", "XAL4020", "Coilcraft", "XAL4020-682MEC"), two("BUCK_SW", "+3V3"), B)
+# pads fit either the Laird TYA4020 or the Coilcraft XAL4020-682MEC
+add("L1", ("L", "6.8uH", "XAL4020", "Laird", "TYA40206R8M-10"), two("BUCK_SW", "+3V3"), B)
 add("R5", "100k", two("+3V3", "BUCK_FB"), B)
 add("R6", "22k1", two("BUCK_FB", "GND"), B)
 add("C9", "22u", two("+3V3", "GND"), B)

@@ -98,12 +98,23 @@ def renamed(src, new):
     return t
 
 
+def l4020():
+    """4 x 4 mm inductor pads that take both the Laird TYA4020 (1.0 mm terminals at the
+    body edges, 2.0 mm apart) and the Coilcraft XAL4020 (lands at +-1.185 mm)."""
+    t = renamed(find_stock("L_Coilcraft_XAL4020-XXX"), "L_4020_XAL_TYA")
+    t = re.sub(r'\(descr "[^"]*"\)', '(descr "4x4 mm inductor, fits Laird TYA4020 and Coilcraft XAL4020")', t)
+    t = t.replace("(at -1.185 0) (size 0.98 3.4)", "(at -1.5 0) (size 1.6 3.6)")
+    t = t.replace("(at 1.185 0) (size 0.98 3.4)", "(at 1.5 0) (size 1.6 3.6)")
+    t = t.replace("2.41", "2.51").replace("1.96", "1.91").replace("2.4)", "2.5)").replace("-2.4 ", "-2.5 ").replace(" 2.4 ", " 2.5 ")
+    return t
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):
         os.remove(os.path.join(OUT, f))
     names = set(F.values()) | {"Fiducial_1mm_Mask2mm"}
-    custom = {"RPi_RM2", "RP2350A_QFN-60_7x7mm_P0.4mm", "L_Abracon_AOTA-B201610"}
+    custom = {"RPi_RM2", "RP2350A_QFN-60_7x7mm_P0.4mm", "L_Abracon_AOTA-B201610", "L_4020_XAL_TYA"}
     for n in sorted(names - custom):
         p = find_stock(n)
         if not p:
@@ -113,6 +124,7 @@ def main():
     open(os.path.join(OUT, "RP2350A_QFN-60_7x7mm_P0.4mm.kicad_mod"), "w").write(
         renamed(os.path.join(OPENFC, "QFN-60_L7.0-W7.0-P0.40-TL-EP3.4.kicad_mod"), "RP2350A_QFN-60_7x7mm_P0.4mm"))
     open(os.path.join(OUT, "L_Abracon_AOTA-B201610.kicad_mod"), "w").write(aota())
+    open(os.path.join(OUT, "L_4020_XAL_TYA.kicad_mod"), "w").write(l4020())
     print(len(os.listdir(OUT)), "footprints in", os.path.normpath(OUT))
 
 

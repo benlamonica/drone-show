@@ -157,6 +157,7 @@ passives are on the bottom). Battery leads are soldered by hand to `J1`.
 | M1 | RM2 radio module | Raspberry Pi SC1169 |
 | U3 | 16 Mbit QSPI flash | Winbond W25Q16JVSNIQ |
 | U1 | 3.3 V buck | TI LMR51420YDDCR |
+| L1 | 3.3 V buck inductor, 6.8 uH, 4 x 4 mm | Laird TYA40206R8M-10 (pads also fit Coilcraft XAL4020-682MEC) |
 | U5-U8 | LED driver | Diodes AL8860MP-13 |
 | L3-L6 | 47 uH 0.92 A | Bourns SRN6028-470M |
 | D6-D9 | Schottky | Diodes B240A-13-F |
