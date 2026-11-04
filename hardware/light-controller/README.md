@@ -45,13 +45,15 @@ resistor setting I = 0.1 V / 0.15 ohm = 0.67 A. At that current, roughly:
 | Red | ~100 lm | ~300 lm |
 | Blue | ~450 mW radiant | ~1.3 W radiant |
 
-All four channels at full is about 1500 lm and 25 W from the pack, which is far more
-heat than a 73 x 35 mm board can shed in still air. It is fine in flight with prop
-wash, and a show rarely holds full white. The firmware should still:
+All four channels at full is about 1500 lm and 23 W into the LEDs, roughly 15-17 W of heat. Inside the diffuser the board sits in nearly still air, and a rough estimate is that it can shed only about 5 W continuously before the air inside passes 55-60 C, where a PLA diffuser starts to soften. These are estimates; measure on the bench (below) before setting final limits. The firmware must:
 
-- cap the sum of the four duty cycles (for example 200 % total) during a show,
-- derate on the NTC (`TH1`, on GPIO26) above about 80 C board temperature,
+- hold the total LED power to about 5 W averaged over 30 s (roughly 150-200 lm of white, or one colour at about 75 %); short flashes above that are fine,
+- read the NTC (`TH1`, on GPIO26), start dimming at 60 C board temperature and reach zero output at 80 C,
 - never run full white on the bench without airflow.
+
+The diffuser helps if it is printed in PETG or another plastic rated above 80 C instead of PLA, and if it has vent slots so prop wash moves air across the board (see `frame/`).
+
+Bench test before building all 30: put one board in a diffuser, run it at a fixed power (start at 3 W, then 5 W, then 8 W) for 10 minutes each, and log the NTC temperature. The highest power that stays under 60 C is the real budget; update the numbers above with it.
 
 To trade brightness for heat, change the four 0.15 ohm sense resistors
 (`R31`-`R34`): 0.2 ohm gives 0.5 A. Don't go below 0.1 ohm (1 A, the XP-E2 maximum).
