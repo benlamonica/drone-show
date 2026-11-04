@@ -71,7 +71,7 @@ F = {
     "SMB": "D_SMB", "SMA": "D_SMA", "SOD123": "D_SOD-123", "SOT223": "SOT-223-3_TabPin2",
     "SOT236": "SOT-23-6", "MSOP8EP": "MSOP-8-1EP_3x3mm_P0.65mm_EP1.68x1.88mm",
     "SOIC8": "SOIC-8_3.9x4.9mm_P1.27mm", "XTAL": "Crystal_SMD_3225-4Pin_3.2x2.5mm",
-    "XAL4020": "L_Coilcraft_XAL4020-XXX", "SRN6028": "L_Bourns-SRN6028",
+    "XAL4020": "L_4020_XAL_TYA", "SRN6028": "L_Bourns-SRN6028",
     "L2016": "L_Abracon_AOTA-B201610", "QFN60": "RP2350A_QFN-60_7x7mm_P0.4mm",
     "RM2": "RPi_RM2", "XPE2": "LED_Cree-XP",
     "SH3": "JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal",
@@ -148,7 +148,8 @@ add("C6", "4u7_50", two("VIN", "GND"), B)
 add("C7", "100n", two("VIN", "GND"), B)
 add("R4", "100k", two("VIN", "BUCK_EN"), B)
 add("C8", "100n", two("BUCK_CB", "BUCK_SW"), B)
-add("L1", ("L", "6.8uH 3.6A", "XAL4020", "Coilcraft", "XAL4020-682MEC"), two("BUCK_SW", "+3V3"), B)
+# pads fit either the Laird TYA4020 or the Coilcraft XAL4020-682MEC
+add("L1", ("L", "6.8uH", "XAL4020", "Laird", "TYA40206R8M-10"), two("BUCK_SW", "+3V3"), B)
 add("R5", "100k", two("+3V3", "BUCK_FB"), B)
 add("R6", "22k1", two("BUCK_FB", "GND"), B)
 add("C9", "22u", two("+3V3", "GND"), B)
@@ -174,7 +175,9 @@ mcu.update({"46": "VREG_AVDD", "48": "VREG_LX", "47": "GND", "61": "GND", "21": 
 mcu.update(gpio)
 for n in ("7", "8", "9", "10", "16", "17", "18", "19", "28", "29", "31", "32", "33", "34", "42", "51", "52"):
     mcu[n] = None   # unused GPIO
-add("U2", ("RP2350A", "RP2350A", "QFN60", "Raspberry Pi", "RP2350A (or RP2354A, then omit U3)"), mcu, B)
+# RP2354A: an RP2350A with 2 MB of flash in the package, so U3 and its C29 are not fitted.
+# Fit both only if you build with a plain RP2350A.
+add("U2", ("RP2350A", "RP2354A", "QFN60", "Raspberry Pi", "RP2354A"), mcu, B)
 for i, _ in enumerate(("1", "11", "20", "30", "38", "45")):
     add(f"C{11 + i}", "100n", two("+3V3", "GND"), B)
 for i in range(3):
@@ -195,8 +198,8 @@ add("C27", "15p", two("XIN", "GND"), B)
 add("C28", "15p", two("XOUT_X", "GND"), B)
 add("U3", ("W25Q16", "W25Q16JVSNIQ", "SOIC8", "Winbond", "W25Q16JVSNIQ"),
     {"1": "QSPI_SS", "2": "QSPI_SD1", "3": "QSPI_SD2", "4": "GND", "5": "QSPI_SD0",
-     "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B)
-add("C29", "100n", two("+3V3", "GND"), B)
+     "6": "QSPI_SCLK", "7": "QSPI_SD3", "8": "+3V3"}, B, dnp=True)
+add("C29", "100n", two("+3V3", "GND"), B, dnp=True)
 add("R11", "10k", two("+3V3", "RUN"), B)
 
 # --- FC UART, SWD and test pads (no USB or SWD connector: program through pogo pins, then over UART or Wi-Fi) -------------------------------------------------------
