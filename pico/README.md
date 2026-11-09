@@ -96,6 +96,56 @@ arm-none-eabi-gdb build/pico/drone-show-controller.elf -ex 'target extended-remo
 Set your surveyed base position in `BASE_ECEF` in `app/main.c`, or leave it
 zero and let the caster's RTCM 1005/1006 supply it.
 
+## Wi-Fi MAVLink bridge (`wifi_bridge`)
+
+A separate firmware for a Pico W or Pico 2 W that forwards MAVLink between a
+flight controller UART and UDP port 14550. It has no RTK and no GPS injection.
+It uses the light controller's flight-controller pins, so it is the first stage
+of that board's firmware. It does not drive any lights yet.
+
+The target is only built when the Wi-Fi network is given at configure time:
+
+```bash
+cmake -S pico -B build/pico -DPICO_BOARD=pico2_w -DCMAKE_BUILD_TYPE=Release \
+      -DRTKPICO_WIFI_SSID=<network> -DRTKPICO_WIFI_PASSWORD=<password>
+cmake --build build/pico -j8 --target wifi_bridge
+picotool load -x build/pico/wifi_bridge.uf2 --ser <pico-serial> -f
+```
+
+Wiring to the OpenFC-Lite-Mini, using its PIO UART (`SERIAL3`, 3.3 V logic). The
+pads are on the board's left edge:
+
+| Pico 2 W | | FC pad (silkscreen) | FC GPIO |
+|---|---|---|---|
+| Pin 1, GP0 (UART0 TX) | -> | `RP0` | GP3, PIOUART0 RX |
+| Pin 2, GP1 (UART0 RX) | <- | `TP0` | GP2, PIOUART0 TX |
+| Pin 3, GND | -- | `GND` | |
+| Pin 39, VSYS | <- | `5v` | |
+
+Power the Pico from the FC's 5 V pad or from its own USB, never both: the Pico's
+VBUS diode would let USB feed the FC's 5 V rail. The `RP0` pad is also pin 4 of
+the ESC connector, so an ESC that drives its telemetry wire will fight the Pico.
+Leave that wire unconnected.
+
+On the flight controller, then reboot it:
+
+```
+SERIAL3_PROTOCOL 2
+SERIAL3_BAUD 115
+```
+
+Change the rate with `FC_BAUD` in `app/wifi_bridge.c`, and keep the two matched.
+
+QGroundControl needs no setup if the computer is on the same network: it listens
+on UDP 14550 and connects when it hears the bridge. The bridge broadcasts until
+a ground station answers, then sends only to that station. After 10 s of silence
+from the station it goes back to broadcasting. If broadcasts don't get through,
+add a UDP comm link in QGroundControl with the Pico's address as a target.
+
+The onboard LED blinks slowly while Wi-Fi is down, stays on when connected and
+flickers with traffic. USB serial prints a status line every 3 s with the IP
+address, signal strength, ground station, FC system id and byte counts each way.
+
 ## Base corrections over Wi-Fi (NTRIP)
 
 Corrections come from `str2str` on a Raspberry Pi attached to the base

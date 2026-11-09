@@ -178,6 +178,29 @@ if(RTKPICO_NTRIP_PORT)
 endif()
 rtkpico_configure(drone-show-controller)
 
+# --- Wi-Fi MAVLink bridge ------------------------------------------------------
+# Flight controller UART <-> UDP and nothing else: no RTK, no GPS injection.
+# The first stage of the light controller's firmware, on the same UART pins.
+# The Wi-Fi credentials are required, and the target is skipped without them.
+if(RTKPICO_WIFI_SSID AND RTKPICO_WIFI_PASSWORD)
+  add_executable(wifi_bridge
+      ${RTK_ROOT}/pico/app/wifi_bridge.c
+      ${RTK_ROOT}/pico/port/mavlink_min.c
+  )
+  target_include_directories(wifi_bridge PRIVATE ${RTK_ROOT}/pico/config ${RTK_ROOT}/pico/port)
+  target_link_libraries(wifi_bridge pico_stdlib hardware_uart hardware_irq
+      pico_cyw43_arch_lwip_threadsafe_background)
+  pico_enable_stdio_usb(wifi_bridge 1)
+  pico_enable_stdio_uart(wifi_bridge 0)   # the UART is the flight controller link
+  target_compile_definitions(wifi_bridge PRIVATE
+      PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000
+      WIFI_SSID="${RTKPICO_WIFI_SSID}"
+      WIFI_PASSWORD="${RTKPICO_WIFI_PASSWORD}")
+  pico_add_extra_outputs(wifi_bridge)
+else()
+  message(STATUS "wifi_bridge skipped: set RTKPICO_WIFI_SSID and RTKPICO_WIFI_PASSWORD")
+endif()
+
 # --- on-target benchmark -------------------------------------------------------
 add_executable(bench_target ${RTK_ROOT}/pico/app/bench_target.c)
 target_include_directories(bench_target PRIVATE ${RTK_ROOT}/pico/test)
