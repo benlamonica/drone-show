@@ -131,10 +131,12 @@ On the flight controller, then reboot it:
 
 ```
 SERIAL3_PROTOCOL 2
-SERIAL3_BAUD 115
+SERIAL3_BAUD 460
 ```
 
-Change the rate with `FC_BAUD` in `app/wifi_bridge.c`, and keep the two matched.
+That is 460800 baud, about 46 KB/s. Change the rate with `FC_BAUD` in
+`app/wifi_bridge.c`, and keep the two matched. 460800 keeps the FC's PIO UART
+receive interrupt at one per 22 us; going higher costs FC CPU time for little gain.
 
 QGroundControl needs no setup if the computer is on the same network: it listens
 on UDP 14550 and connects when it hears the bridge. The bridge broadcasts until

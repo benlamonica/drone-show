@@ -44,7 +44,7 @@
 #define FC_TX_PIN        0
 #define FC_RX_PIN        1
 #ifndef FC_BAUD
-#define FC_BAUD          115200
+#define FC_BAUD          460800
 #endif
 
 #define MAVLINK_UDP_PORT 14550
